@@ -149,14 +149,14 @@
       if (user.role === "admin") {
         // Disable editing
         document.getElementById('name').setAttribute('disabled', true);
-        document.getElementById('email').setAttribute('disabled', true);
         document.getElementById('state').setAttribute('disabled', true);
-        document.getElementById('role').setAttribute('disabled', true);
 
         // Hide save button and profile picture section
         document.getElementById('saveProfileBtn').style.display = 'none';
         document.getElementById('profilePictureSection').style.display = 'none';
       }
+        document.getElementById('role').setAttribute('disabled', true);
+        document.getElementById('email').setAttribute('disabled', true);
     }
 
     // Preview chosen picture
