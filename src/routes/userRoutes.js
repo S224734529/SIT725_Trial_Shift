@@ -5,11 +5,16 @@ const path = require("path");
 const { register, login, getProfile, updateProfile, deleteProfilePicture } = require("../controllers/userController");
 const adminController = require("../controllers/adminController");
 const { authenticate, authorize } = require("../middleware/authMiddleware");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
 
-// Multer config for profile image
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "public/uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "profile_pics",
+    allowed_formats: ["jpg", "png", "jpeg"],
+    public_id: (req, file) => Date.now() + "-" + file.originalname,
+  },
 });
 const upload = multer({ storage });
 
@@ -40,10 +45,29 @@ router.get("/employer", authenticate, authorize("employer"), (req, res) => {
 router.get("/profile", authenticate, getProfile);
 
 // Update profile (requires admin approval)
-router.put("/profile", authenticate, upload.single("profileImage"), updateProfile);
+router.put("/profile", authenticate, upload.single("profilePic"), updateProfile);
 
 // Delete profile picture
 router.delete("/profile/picture", authenticate, deleteProfilePicture);
+
+// Profile picture upload endpoint
+router.post(
+  "/upload/profile-pic",
+  authenticate,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      // The file is already uploaded to Cloudinary by multer-storage-cloudinary
+      // The URL is available at req.file.path
+      return res.json({ url: req.file.path });
+    } catch (err) {
+      res.status(500).json({ message: "Image upload failed" });
+    }
+  }
+);
 
 // ======================
 //  Admin Management
