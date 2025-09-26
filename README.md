@@ -12,6 +12,7 @@ Trial_Shift
 │   ├── app.js
 │   ├── controllers
 │   │   ├── adminController.js
+│   │   ├── adminUserController.js
 │   │   ├── courseController.js
 │   │   ├── jobController.js
 │   │   ├── jobMatchController.js
@@ -29,6 +30,7 @@ Trial_Shift
 │   ├── public
 │   │   ├── css
 │   │   │   ├── admin-approval.css
+│   │   │   ├── admin-user.css
 │   │   │   ├── courses.css
 │   │   │   ├── job-post.css
 │   │   │   ├── job-preferences.css
@@ -42,6 +44,7 @@ Trial_Shift
 │   │   │   └── job-preferences.js
 │   │   └── dashboard.html
 │   ├── routes
+│   │   ├── adminUserRoutes.js
 │   │   ├── courseRoutes.js
 │   │   ├── jobMatchRoutes.js
 │   │   ├── jobPreferenceRoutes.js
@@ -88,7 +91,7 @@ Trial_Shift
 
    npm install express mongoose dotenv jsonwebtoken bcrypt
 
-   npm install multer
+   npm install googleapis multer
    ```
 
 3. **Environment Variables**
