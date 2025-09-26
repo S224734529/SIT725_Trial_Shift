@@ -60,8 +60,6 @@ router.post(
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      // The file is already uploaded to Cloudinary by multer-storage-cloudinary
-      // The URL is available at req.file.path
       return res.json({ url: req.file.path });
     } catch (err) {
       res.status(500).json({ message: "Image upload failed" });
@@ -75,7 +73,11 @@ router.post(
 
 // Profile requests
 router.get("/profile-requests", authenticate, authorize("admin"), adminController.getPendingProfileRequests);
+
+// Approve requests
 router.post("/profile-requests/:id/approve", authenticate, authorize("admin"), adminController.approveProfileUpdate);
+
+// Decline requests
 router.post("/profile-requests/:id/decline", authenticate, authorize("admin"), adminController.declineProfileUpdate);
 
 module.exports = router;

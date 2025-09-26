@@ -85,23 +85,14 @@ exports.updateProfile = async (req, res) => {
       return res.status(403).json({ message: "Admins cannot update profile." });
     }
 
-    let profilePicUrl;
-    if (req.file) {
-      // Upload to Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "profile_pics",
-        resource_type: "image"
-      });
-      profilePicUrl = result.secure_url;
-    }
-
     const updates = {
       name: req.body.name,
       state: req.body.state,
-      profilePic: profilePicUrl
+      profilePic: req.body.profilePic
     };
 
     // Save pending update to user
+    console.log("Profile update requested:", updates);
     await User.findByIdAndUpdate(req.user.id, { pendingApproval: updates });
 
     // Create a profile update request
