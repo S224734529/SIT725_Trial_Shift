@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const ProfileUpdateRequest = require("../models/profileUpdateRequest");
+const cloudinary = require("../config/cloudinary");
 
 // Generate JWT token
 const generateToken = (user) => {
@@ -87,10 +88,11 @@ exports.updateProfile = async (req, res) => {
     const updates = {
       name: req.body.name,
       state: req.body.state,
-      profilePic: req.file ? "/uploads/" + req.file.filename : undefined
+      profilePic: req.body.profilePic
     };
 
     // Save pending update to user
+    console.log("Profile update requested:", updates);
     await User.findByIdAndUpdate(req.user.id, { pendingApproval: updates });
 
     // Create a profile update request
