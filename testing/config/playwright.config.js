@@ -2,6 +2,9 @@ const path = require("path");
 const { defineConfig, devices } = require("@playwright/test");
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:4173";
+const projectRoot = path.resolve(__dirname, "../..");
+const appEntry = path.join(projectRoot, "src", "app.js");
+const webServerCommand = `npx cross-env PORT=4173 NODE_ENV=test node "${appEntry}"`;
 
 module.exports = defineConfig({
   testDir: path.resolve(__dirname, "../e2e/specs"),
@@ -22,7 +25,7 @@ module.exports = defineConfig({
     video: "retain-on-failure",
   },
   webServer: {
-    command: "npx cross-env PORT=4173 NODE_ENV=test node src/app.js",
+    command: webServerCommand,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

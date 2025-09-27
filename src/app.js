@@ -1,7 +1,7 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 const express = require("express");
 const mongoose = require("mongoose");
-const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -10,11 +10,10 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
-app.use(express.static(path.join(__dirname, "src/public"))); 
+app.use(express.static(path.join(__dirname, "src/public")));
 app.use(express.static(path.join(__dirname, "src/views/components")));
-app.use(express.static(path.join(__dirname, 'views')));
+app.use(express.static(path.join(__dirname, "views")));
 app.use(express.static("public"));
-
 
 // Pages
 app.get("/", (req, res) => {
@@ -40,10 +39,9 @@ app.get("/job-edit", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "job-edit.html"));
 });
 
-
 // Admin-only manage courses page
 const { authenticate, authorize } = require("./middleware/authMiddleware");
-app.get("/courses/manage", authenticate, authorize('admin'), (req, res) => {
+app.get("/courses/manage", authenticate, authorize("admin"), (req, res) => {
   res.sendFile(path.join(__dirname, "views", "courses.html"));
 });
 
@@ -58,19 +56,36 @@ const courseRoutes = require("./routes/courseRoutes");
 app.use("/api/courses", courseRoutes);
 app.use("/api/admin", require("./routes/adminUserRoutes"));
 
-
 // MongoDB connection
 mongoose
   .connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
   })
   .then(() => {
     console.log("MongoDB connected to:", mongoose.connection.db.databaseName);
   })
   .catch((err) => console.error("MongoDB connection error:", err));
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+let server;
+function startServer(port = PORT) {
+  if (server) {
+    return server;
+  }
+
+  server = app.listen(port, () => {
+    const address = server.address();
+    const resolvedPort = typeof address === "string" ? address : address?.port;
+    console.log(`Server running at http://localhost:${resolvedPort ?? port}`);
+  });
+
+  app.locals.server = server;
+  return server;
+}
+
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app;
+module.exports.startServer = startServer;

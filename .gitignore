@@ -6,3 +6,4 @@ testing/reports/
 public/uploads/
 *.webm
 *.mp4
+test-results/

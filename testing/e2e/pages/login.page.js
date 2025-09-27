@@ -3,10 +3,10 @@ const { expect } = require("@playwright/test");
 class LoginPage {
   constructor(page) {
     this.page = page;
-    this.loginTab = page.getByRole("button", { name: "Login" });
-    this.emailField = page.getByPlaceholder("Enter your email");
-    this.passwordField = page.getByPlaceholder("Enter your password");
-    this.submitButton = page.getByRole("button", { name: "Login" });
+    this.loginTab = page.locator(".tabs .tab-btn", { hasText: "Login" });
+    this.emailField = page.locator("#loginForm input[type='email']");
+    this.passwordField = page.locator("#loginForm input[type='password']");
+    this.submitButton = page.locator("#loginForm button[type='submit']");
   }
 
   async goto() {
