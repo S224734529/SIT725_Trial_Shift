@@ -24,7 +24,8 @@
     "mongodb": "^6.19.0",
     "mongoose": "^7.6.3",
     "multer": "^2.0.2",
-    "multer-storage-cloudinary": "^4.0.0"
+    "multer-storage-cloudinary": "^4.0.0",
+    "validator": "^13.15.15"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.2",

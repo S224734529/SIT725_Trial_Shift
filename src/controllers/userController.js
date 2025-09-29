@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user");
 const ProfileUpdateRequest = require("../models/profileUpdateRequest");
 const cloudinary = require("../config/cloudinary");
+const validator = require("validator");
 
 // Generate JWT token
 const generateToken = (user) => {
@@ -17,16 +18,49 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password, role, state } = req.body;
 
-    // prevent admin registration from frontend
+    if (!name || !email || !password || !role || !state) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
     if (role === "admin") {
-      return res.status(403).json({ message: "Admin accounts cannot be self-registered" });
+      return res
+        .status(403)
+        .json({ message: "Admin accounts cannot be self-registered" });
+    }
+
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    if (
+      !validator.isStrongPassword(password, {
+        minLength: 8,
+        minLowercase: 1,
+        minUppercase: 1,
+        minNumbers: 1,
+        minSymbols: 1,
+      })
+    ) {
+      return res.status(400).json({
+        error:
+          "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
+      });
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ error: "User with this email already exists" });
     }
 
     const user = new User({ name, email, password, role, state });
     await user.save();
+
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Registration error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -34,12 +68,24 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(400).json({ message: "Invalid credentials" });
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
     }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
     const token = generateToken(user);
-    res.json({
+
+    res.status(200).json({
       token,
       user: {
         id: user._id,
@@ -52,7 +98,8 @@ exports.login = async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

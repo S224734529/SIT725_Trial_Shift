@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
   <div class="container">
     <img src="/img/logo.png" alt="Logo" width="120" style="margin-bottom: 10px;">
@@ -103,7 +105,7 @@
     }
 
     // LOGIN FORM SUBMIT
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       showError('login', '');
       const email = document.getElementById('loginEmail').value.trim();
@@ -126,27 +128,30 @@
       });
 
       const data = await res.json();
+
       if (res.ok && data.token) {
-        
-        console.log("User Details: " + res.status + " " + JSON.stringify(data));
+        console.log("User Details:", res.status, data);
+
         if (data.user && data.user.active === false) {
           showError('login', 'Your account is inactive. Please contact admin for assistance.');
           return;
         }
+
         localStorage.setItem("token", data.token);
         showSuccess('login', 'Login successful! Redirecting...');
         setTimeout(() => {
           window.location.href = "/dashboard.html";
         }, 2000);
+
       } else {
-        showError('login', data.message || 'Login failed');
+        const errorMsg = data.error || data.message || 'Login failed';
+        showError('login', errorMsg);
       }
     });
 
-    // REGISTER FORM SUBMIT
-    document.getElementById('registerForm').addEventListener('submit', async function(e) {
+    document.getElementById('registerForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      showError('register', ''); // Clear previous error
+      showError('register', ''); 
       const name = document.getElementById('registerName').value.trim();
       const email = document.getElementById('registerEmail').value.trim();
       const password = document.getElementById('registerPassword').value;
@@ -187,14 +192,19 @@
       });
 
       const data = await res.json();
+      console.log("Registration Response:", res.status, data);
+
       if (res.ok) {
         switchTab('login');
         showError('login', '');
         showSuccess('login', 'Registration successful! Please login.');
       } else {
-        showError('register', data.message || 'Registration failed');
+        const errorMsg = data.error || data.message || 'Registration failed';
+        showError('register', errorMsg);
       }
+
     });
   </script>
 </body>
+
 </html>
