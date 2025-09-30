@@ -147,7 +147,7 @@
         async function approveRequest(id) {
           showConfirm("Approve this profile update?", async function() {
             const res = await fetch(`/api/admin/profile-requests/${id}/approve`, {
-              method: "POST",
+              method: "PUT",
               headers: { Authorization: "Bearer " + localStorage.getItem("token") }
             });
             if (res.ok) {
@@ -172,7 +172,7 @@
           closeDeclineModal();
           showConfirm("Decline this profile update?", async function() {
             const res = await fetch(`/api/admin/profile-requests/${declineRequestId}/decline`, {
-              method: "POST",
+              method: "PUT",
               headers: {
                 "Content-Type": "application/json",
                 Authorization: "Bearer " + localStorage.getItem("token")

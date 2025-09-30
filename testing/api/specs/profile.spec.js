@@ -97,10 +97,6 @@ describe("Update Profile API", () => {
   beforeAll(async () => {
     app = global.__app;
 
-    // Clear users and profile requests
-    await User.deleteMany({});
-    await ProfileUpdateRequest.deleteMany({});
-
     user = await User.create({
       name: "Test User",
       email: "test@example.com",
@@ -340,10 +336,6 @@ describe("Delete Profile Picture API", () => {
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
-  });
-
-  afterAll(async () => {
-    await User.deleteMany({ email: /picuser-/ });
   });
 
   test("deletes profile picture successfully", async () => {
