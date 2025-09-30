@@ -7,6 +7,14 @@
   <title>Login & Register</title>
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .error-message, .success-message {
+      color: red;
+      margin: 5px 0;
+      display: none;
+    }
+    .success-message { color: green; }
+  </style>
 </head>
 
 <body>
@@ -21,16 +29,17 @@
 
     <!-- Login Form -->
     <div id="login" class="form-box">
-      <form id="loginForm">
+      <!-- add novalidate -->
+      <form id="loginForm" novalidate>
         <div id="loginSuccess" class="success-message"></div>
         <div id="loginError" class="error-message"></div>
         <div class="input-field">
           <i class="material-icons">email</i>
-          <input type="email" id="loginEmail" placeholder="Enter your email" required>
+          <input type="email" id="loginEmail" placeholder="Enter your email">
         </div>
         <div class="input-field">
           <i class="material-icons">lock</i>
-          <input type="password" id="loginPassword" placeholder="Enter your password" required>
+          <input type="password" id="loginPassword" placeholder="Enter your password">
         </div>
         <button type="submit">Login</button>
         <a href="#">Forgot your password? Reset.</a>
@@ -39,27 +48,28 @@
 
     <!-- Register Form -->
     <div id="register" class="form-box" style="display:none;">
-      <form id="registerForm">
+      <!-- add novalidate -->
+      <form id="registerForm" novalidate>
         <div id="registerError" class="error-message"></div>
         <div class="input-field">
           <i class="material-icons">person</i>
-          <input type="text" id="registerName" placeholder="Enter your name" required>
+          <input type="text" id="registerName" placeholder="Enter your name">
         </div>
         <div class="input-field">
           <i class="material-icons">email</i>
-          <input type="email" id="registerEmail" placeholder="Enter your email" required>
+          <input type="email" id="registerEmail" placeholder="Enter your email">
         </div>
         <div class="input-field">
           <i class="material-icons">lock</i>
-          <input type="password" id="registerPassword" placeholder="Enter your password" required>
+          <input type="password" id="registerPassword" placeholder="Enter your password">
         </div>
         <div class="input-field">
           <i class="material-icons">lock</i>
-          <input type="password" id="registerConfirm" placeholder="Confirm the password" required>
+          <input type="password" id="registerConfirm" placeholder="Confirm the password">
         </div>
         <div class="input-field">
           <i class="material-icons">public</i>
-          <select id="registerState" required>
+          <select id="registerState">
             <option value="">Select your state</option>
             <option>New South Wales</option>
             <option>Victoria</option>
@@ -72,7 +82,7 @@
           </select>
         </div>
         <div class="checkbox-group">
-          <label><input type="radio" name="role" value="employer" required> Employer</label>
+          <label><input type="radio" name="role" value="employer"> Employer</label>
           <label><input type="radio" name="role" value="jobseeker"> Job Seeker</label>
         </div>
         <button type="submit">Submit</button>
@@ -96,6 +106,7 @@
 
     function showSuccess(form, message) {
       const successDiv = document.getElementById(form + "Success");
+      if (!successDiv) return;
       successDiv.textContent = message;
       successDiv.style.display = message ? "block" : "none";
     }
@@ -111,7 +122,6 @@
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
 
-      // Validation
       if (!validateEmail(email)) {
         showError('login', 'Please enter a valid email address.');
         return;
@@ -130,28 +140,22 @@
       const data = await res.json();
 
       if (res.ok && data.token) {
-        console.log("User Details:", res.status, data);
-
         if (data.user && data.user.active === false) {
           showError('login', 'Your account is inactive. Please contact admin for assistance.');
           return;
         }
-
         localStorage.setItem("token", data.token);
         showSuccess('login', 'Login successful! Redirecting...');
-        setTimeout(() => {
-          window.location.href = "/dashboard.html";
-        }, 2000);
-
+        setTimeout(() => window.location.href = "/dashboard.html", 2000);
       } else {
-        const errorMsg = data.error || data.message || 'Login failed';
-        showError('login', errorMsg);
+        showError('login', data.error || data.message || 'Login failed');
       }
     });
 
+    // REGISTER FORM SUBMIT
     document.getElementById('registerForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      showError('register', ''); 
+      showError('register', '');
       const name = document.getElementById('registerName').value.trim();
       const email = document.getElementById('registerEmail').value.trim();
       const password = document.getElementById('registerPassword').value;
@@ -159,31 +163,12 @@
       const state = document.getElementById('registerState').value;
       const role = document.querySelector('input[name="role"]:checked')?.value;
 
-      // Validation
-      if (!name) {
-        showError('register', 'Please enter your name.');
-        return;
-      }
-      if (!validateEmail(email)) {
-        showError('register', 'Please enter a valid email address.');
-        return;
-      }
-      if (password.length < 6) {
-        showError('register', 'Password must be at least 6 characters.');
-        return;
-      }
-      if (password !== confirm) {
-        showError('register', 'Passwords do not match!');
-        return;
-      }
-      if (!state) {
-        showError('register', 'Please select your state.');
-        return;
-      }
-      if (!role) {
-        showError('register', 'Please select your role.');
-        return;
-      }
+      if (!name) return showError('register', 'Please enter your name.');
+      if (!validateEmail(email)) return showError('register', 'Please enter a valid email address.');
+      if (password.length < 6) return showError('register', 'Password must be at least 6 characters.');
+      if (password !== confirm) return showError('register', 'Passwords do not match!');
+      if (!state) return showError('register', 'Please select your state.');
+      if (!role) return showError('register', 'Please select your role.');
 
       const res = await fetch('/api/users/register', {
         method: 'POST',
@@ -192,19 +177,15 @@
       });
 
       const data = await res.json();
-      console.log("Registration Response:", res.status, data);
 
       if (res.ok) {
         switchTab('login');
         showError('login', '');
         showSuccess('login', 'Registration successful! Please login.');
       } else {
-        const errorMsg = data.error || data.message || 'Registration failed';
-        showError('register', errorMsg);
+        showError('register', data.error || data.message || 'Registration failed');
       }
-
     });
   </script>
 </body>
-
 </html>
