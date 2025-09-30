@@ -2,12 +2,11 @@ const request = require("supertest");
 
 let app;
 
-describe("User authentication", () => {
+describe("User Register API", () => {
   beforeAll(() => {
     app = global.__app;
   });
 
-  //Register API Tests
   test("registers a new user", async () => {
     const email = `playwright-${Date.now()}@example.com`;
 
@@ -88,6 +87,12 @@ describe("User authentication", () => {
     expect(response.status).toBe(409);
     expect(response.body).toHaveProperty("error");
   });
+});
+
+describe("User Login API", () => {
+  beforeAll(() => {
+    app = global.__app;
+  });
 
   test("logs in an existing user", async () => {
     const email = `login-${Date.now()}@example.com`;
@@ -152,6 +157,12 @@ describe("User authentication", () => {
 
     expect(response.status).toBe(400);
     expect(response.body).toHaveProperty("error");
+  });
+});
+
+describe("JWT", () => {
+  beforeAll(() => {
+    app = global.__app;
   });
 
   // JWT Tests
