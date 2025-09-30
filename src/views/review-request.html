@@ -79,7 +79,7 @@
     </script>
     <script>
         async function fetchRequests() {
-            const res = await fetch('/api/users/profile-requests', {
+            const res = await fetch('/api/admin/profile-requests', {
                 headers: { Authorization: "Bearer " + localStorage.getItem("token") }
             });
             const requests = await res.json();
@@ -146,7 +146,7 @@
 
         async function approveRequest(id) {
           showConfirm("Approve this profile update?", async function() {
-            const res = await fetch(`/api/users/profile-requests/${id}/approve`, {
+            const res = await fetch(`/api/admin/profile-requests/${id}/approve`, {
               method: "POST",
               headers: { Authorization: "Bearer " + localStorage.getItem("token") }
             });
@@ -171,7 +171,7 @@
           const reason = document.getElementById('declineReasonInput').value;
           closeDeclineModal();
           showConfirm("Decline this profile update?", async function() {
-            const res = await fetch(`/api/users/profile-requests/${declineRequestId}/decline`, {
+            const res = await fetch(`/api/admin/profile-requests/${declineRequestId}/decline`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

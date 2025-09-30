@@ -58,17 +58,4 @@ router.post(
   uploadProfilePic 
 );
 
-// ======================
-//  Admin Management
-// ======================
-
-// Profile requests
-router.get("/profile-requests", authenticate, authorize("admin"), adminController.getPendingProfileRequests);
-
-// Approve requests
-router.post("/profile-requests/:id/approve", authenticate, authorize("admin"), adminController.approveProfileUpdate);
-
-// Decline requests
-router.post("/profile-requests/:id/decline", authenticate, authorize("admin"), adminController.declineProfileUpdate);
-
 module.exports = router;
