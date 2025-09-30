@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const { register, login, getProfile, updateProfile, deleteProfilePicture } = require("../controllers/userController");
+const { register, login, getProfile, updateProfile, deleteProfilePicture, uploadProfilePic } = require("../controllers/userController");
 const adminController = require("../controllers/adminController");
 const { authenticate, authorize } = require("../middleware/authMiddleware");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
@@ -50,21 +50,12 @@ router.put("/profile", authenticate, upload.single("profilePic"), updateProfile)
 // Delete profile picture
 router.delete("/profile/picture", authenticate, deleteProfilePicture);
 
-// Profile picture upload endpoint
+// Upload profile picture
 router.post(
   "/upload/profile-pic",
   authenticate,
   upload.single("file"),
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ message: "No file uploaded" });
-      }
-      return res.json({ url: req.file.path });
-    } catch (err) {
-      res.status(500).json({ message: "Image upload failed" });
-    }
-  }
+  uploadProfilePic 
 );
 
 // ======================
