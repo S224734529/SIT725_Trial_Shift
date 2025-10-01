@@ -92,6 +92,8 @@ Trial_Shift
    npm install express mongoose dotenv jsonwebtoken bcrypt
 
    npm install googleapis multer
+
+   npm install validator
    ```
 
 3. **Environment Variables**
