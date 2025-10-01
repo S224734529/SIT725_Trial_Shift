@@ -159,6 +159,35 @@
                   placeholder="Paste notes, outline, or links here..."
                 ></textarea>
               </div>
+            <div class="form-row form-row-top">
+              <div class="form-label">Attachments</div>
+              <div class="form-field">
+                <div id="addAssetList" class="asset-list"></div>
+                <div class="asset-upload">
+                  <input
+                    id="addAssetTitle"
+                    class="soft-input"
+                    type="text"
+                    placeholder="Attachment title (optional)"
+                  />
+                  <input
+                    id="addAssetFile"
+                    type="file"
+                    accept="image/*,.pdf"
+                    style="margin-top: 10px"
+                  />
+                  <div class="asset-actions">
+                    <button id="btnAddAttachment" class="btn-soft" type="button">
+                      Add Attachment
+                    </button>
+                  </div>
+                  <div id="addAssetError" class="help-error" style="display: none"></div>
+                  <div id="addAssetSuccess" class="help-success" style="display: none">Attachment staged.</div>
+                  <div class="help-muted">
+                    Attachments upload after saving. Supported: JPG, PNG, PDF. Max 10MB each.
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-row">
               <div class="form-label">Quiz Required to Complete Course</div>
@@ -198,6 +227,7 @@
           <h4 id="detailsTitle" class="h-title"></h4>
           <p id="detailsMeta" class="muted"></p>
           <div id="detailsContent" class="soft-text"></div>
+          <div id="detailsAttachments" class="asset-gallery"></div>
         </div>
         <div class="card__right">
           <img src="/img/learning.png" alt="learn" class="hero-illus" />
@@ -247,6 +277,46 @@
                   id="editCourseContent"
                   class="soft-input soft-textarea"
                 ></textarea>
+              </div>
+            </div>
+            <div class="form-row form-row-top">
+              <div class="form-label">Attachments</div>
+              <div class="form-field">
+                <div id="editAssetList" class="asset-list"></div>
+                <div class="asset-upload">
+                  <input
+                    id="editAssetTitle"
+                    class="soft-input"
+                    type="text"
+                    placeholder="Attachment title (optional)"
+                  />
+                  <input
+                    id="editAssetFile"
+                    type="file"
+                    accept="image/*,.pdf"
+                    style="margin-top: 10px"
+                  />
+                  <div class="asset-actions">
+                    <button id="btnUploadAsset" class="btn-soft" type="button">
+                      Upload Attachment
+                    </button>
+                  </div>
+                  <div
+                    id="editAssetError"
+                    class="help-error"
+                    style="display: none"
+                  ></div>
+                  <div
+                    id="editAssetSuccess"
+                    class="help-success"
+                    style="display: none"
+                  >
+                    Attachment uploaded.
+                  </div>
+                  <div class="help-muted">
+                    Supported: JPG, PNG, PDF. Max 10MB per file.
+                  </div>
+                </div>
               </div>
             </div>
             <div class="form-row">
