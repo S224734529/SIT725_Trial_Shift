@@ -73,14 +73,3 @@ function loadSidebar() {
     `)
     .join("");
 }
-  menuList.innerHTML = menuItems
-    .map(item => `
-      <li>
-        <a href="${item.url}">
-          <i class="material-icons">${item.icon}</i>
-          ${item.name}
-        </a>
-      </li>
-    `)
-    .join("");
-}

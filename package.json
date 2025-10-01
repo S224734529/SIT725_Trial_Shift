@@ -8,9 +8,13 @@
     "dev": "nodemon src/app.js",
     "test:api": "cross-env NODE_ENV=test jest --config testing/config/jest.config.js --runInBand",
     "test:e2e": "cross-env NODE_ENV=test playwright test -c testing/config/playwright.config.js",
-    "test": "npm run test:api",
+    "test": "jest",
     "test:all": "npm run test:api && npm run test:e2e",
-    "report:e2e": "playwright show-report testing/reports/playwright"
+    "report:e2e": "playwright show-report testing/reports/playwright",
+    "test:e2e:headed": "cross-env NODE_ENV=test playwright test -c testing/config/playwright.config.js --headed",
+    "test:e2e:debug": "cross-env NODE_ENV=test playwright test -c testing/config/playwright.config.js --debug",
+    "playwright:install": "playwright install",
+    "playwright:report": "playwright show-report testing/playwright-report"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -25,14 +29,15 @@
     "mongodb": "^6.19.0",
     "mongoose": "^7.8.7",
     "multer": "^2.0.2",
-    "multer-storage-cloudinary": "^4.0.0"
+    "multer-storage-cloudinary": "^4.0.0",
+    "validator": "^13.15.15"
   },
   "devDependencies": {
     "@playwright/test": "^1.48.2",
     "cross-env": "^7.0.3",
     "jest": "^29.7.0",
     "jest-html-reporters": "^3.1.7",
-    "mongodb-memory-server": "^10.1.4",
+    "mongodb-memory-server": "^10.2.1",
     "nodemon": "^2.0.4",
     "supertest": "^6.3.4"
   },

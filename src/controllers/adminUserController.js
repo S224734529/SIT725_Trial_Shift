@@ -1,4 +1,5 @@
 const User = require("../models/user");
+const jwt = require("jsonwebtoken");
 
 // Get all users (admin only)
 exports.getAllUsers = async (req, res) => {
@@ -23,12 +24,38 @@ exports.deleteUser = async (req, res) => {
 // Toggle user active/inactive (admin only)
 exports.toggleUserActive = async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.params.id, { active: req.body.active });
+    if (!req.user) {
+      return res.status(401).json({ error: "No token provided" });
+    }
+
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Admins only" });
+    }
+
+    const userId = req.params.id;
+    const { active } = req.body;
+
+    if (typeof active !== "boolean") {
+      return res.status(400).json({ message: "Invalid value for active" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { active },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     res.json({ message: "User status updated." });
   } catch (err) {
+    console.error("Toggle user active error:", err);
     res.status(500).json({ message: "Failed to update user status." });
   }
 };
+
 
 // Bulk delete users (admin only)
 exports.bulkDeleteUsers = async (req, res) => {
