@@ -1,4 +1,5 @@
 const Module = require('../models/module');
+const cloudinary = require('../config/cloudinary');
 
 // Create a new module
 exports.createModule = async (req, res) => {
@@ -19,22 +20,43 @@ exports.createModule = async (req, res) => {
 exports.uploadAssets = async (req, res) => {
   try {
     const moduleId = req.params.id;
-    const { type, title, text, url } = req.body;
+    const mod = await Module.findById(moduleId);
+    if (!mod) return res.status(404).json({ error: 'Module not found' });
 
-    const asset = { type, title };
-    if (type === 'text') {
-      asset.text = text;
-    } else if (url) {
-      asset.url = url;
+    let asset;
+
+    if (req.file) {
+      const isPdf = req.file.mimetype === 'application/pdf';
+      const incomingTitle = typeof (req.body && req.body.title) === 'string' ? req.body.title.trim() : '';
+      asset = {
+        title: incomingTitle || req.file.originalname || 'Attachment',
+        type: isPdf ? 'pdf' : 'image',
+        url: req.file.path,
+        publicId: req.file.filename,
+      };
+    } else {
+      const { type, title, text, url } = req.body;
+      if (!type || !title) {
+        return res.status(400).json({ error: 'Type and title are required.' });
+      }
+
+      asset = { type, title };
+
+      if (type === 'text') {
+        asset.text = text || '';
+      } else {
+        if (!url) {
+          return res.status(400).json({ error: 'URL is required for this asset type.' });
+        }
+        asset.url = url;
+      }
     }
 
-    const mod = await Module.findByIdAndUpdate(
-      moduleId,
-      { $push: { assets: asset } },
-      { new: true }
-    );
-    if (!mod) return res.status(404).json({ error: 'Module not found' });
-    res.status(201).json({ message: 'Asset uploaded', asset });
+    mod.assets.push(asset);
+    await mod.save();
+
+    const savedAsset = mod.assets[mod.assets.length - 1];
+    res.status(201).json({ message: 'Asset uploaded', asset: savedAsset });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -69,7 +91,7 @@ exports.getModules = async (req, res) => {
         filter.isArchived = true;
       } else if (val === 'false' || val === 'active') {
         filter.isArchived = { $ne: true };
-      } 
+      }
     } else if (!isAdmin) {
       filter.isArchived = { $ne: true };
     }
@@ -135,6 +157,34 @@ exports.bulkArchiveModules = async (req, res) => {
       { $set: { isArchived: archiveState } }
     );
     res.status(200).json({ message: archiveState ? 'Courses archived successfully' : 'Courses unarchived successfully', matched: result.matchedCount ?? result.nModified, modified: result.modifiedCount ?? result.nModified });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Delete a specific asset from a module
+exports.deleteAsset = async (req, res) => {
+  try {
+    const { id, assetId } = req.params;
+    const mod = await Module.findById(id);
+    if (!mod) return res.status(404).json({ error: 'Module not found' });
+
+    const asset = mod.assets.id(assetId);
+    if (!asset) return res.status(404).json({ error: 'Asset not found' });
+
+    if (asset.publicId) {
+      const resourceType = asset.type === 'pdf' ? 'raw' : 'image';
+      try {
+        await cloudinary.uploader.destroy(asset.publicId, { resource_type: resourceType });
+      } catch (cloudErr) {
+        console.error('Cloudinary destroy failed', cloudErr);
+      }
+    }
+
+    await asset.deleteOne();
+    await mod.save();
+
+    res.json({ message: 'Asset removed' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
