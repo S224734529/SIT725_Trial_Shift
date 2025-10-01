@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Manage Categories - Trial Shift</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/category-manage.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/category-manage.css" />
 </head>
+
 <body>
   <!-- Sidebar -->
   <div class="sidebar" id="sidebar"></div>
@@ -19,49 +21,57 @@
     </div>
   </header>
 
+  <!-- Main content -->
   <main class="main-content">
-    <h4>Manage Categories</h4>
-    <div class="container">
-      <!-- Add Category Form -->
-      <div class="row">
-        <div class="col s12">
-          <div class="card">
-            <div class="card-content">
-              <h5>Add New Category</h5>
-              <form id="addCategoryForm" class="col s12">
-                <div class="row">
-                  <div class="input-field col s12">
-                    <input type="text" id="categoryName" name="name" required>
-                    <label for="categoryName">Category Name</label>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-field col s12">
-                    <textarea id="categoryDescription" name="description" class="materialize-textarea"></textarea>
-                    <label for="categoryDescription">Description (Optional)</label>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col s12">
-                    <button type="submit" class="btn">Add Category</button>
-                  </div>
-                </div>
-              </form>
-              <div id="addSuccess" style="display: none; color: green; text-align: center;"></div>
-            </div>
-          </div>
-        </div>
+    <div class="category-container">
+      <!-- Welcome Section -->
+      <div class="welcome-section">
+        <h4>Manage Categories</h4>
+        <p id="welcomeMessage">Organize and manage job categories for better job classification</p>
       </div>
 
-      <!-- Category List -->
-      <div class="row">
-        <div class="col s12">
-          <div class="card">
-            <div class="card-content">
-              <h5>Existing Categories</h5>
-              <ul class="collection" id="categoryList">
-                <li class="collection-item">Loading categories...</li>
-              </ul>
+      <!-- Main Grid Layout -->
+      <div class="category-grid">
+        <!-- Add Category Card -->
+        <div class="category-card">
+          <h4>📁 Add New Category</h4>
+          <p class="muted">Create new job categories to better organize and classify your job listings</p>
+          
+          <form id="addCategoryForm" class="form-grid">
+            <div class="row">
+              <label class="form-label">Category Name</label>
+              <input type="text" id="categoryName" name="name" class="soft-input" placeholder="e.g., Software Development, Marketing" required>
+            </div>
+
+            <div class="row">
+              <label class="form-label">Description <span class="muted">(Optional)</span></label>
+              <textarea id="categoryDescription" name="description" class="soft-textarea" placeholder="Brief description of this category..."></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-cta">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">add_circle</i>
+                Add Category
+              </button>
+              <a href="/dashboard.html" class="btn-soft">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">dashboard</i>
+                Dashboard
+              </a>
+            </div>
+          </form>
+          
+          <div id="addSuccess" class="success-message"></div>
+        </div>
+
+        <!-- Existing Categories Card -->
+        <div class="categories-card">
+          <h4>🗂️ Existing Categories</h4>
+          <p class="muted" style="color: #6b7280;">Manage your current job categories</p>
+          
+          <div class="manage-list" id="categoryList">
+            <div class="empty-state">
+              <i class="material-icons">category</i>
+              <p>Loading categories...</p>
             </div>
           </div>
         </div>
@@ -69,108 +79,196 @@
     </div>
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <!-- Sidebar component -->
   <script src="/components/sidebar.js"></script>
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    if (typeof loadSidebar === 'function') loadSidebar();
-
-    const token = localStorage.getItem('token');
-    if (!token) window.location.href = '/';
-
-    // Decode token
-    let user;
-    try {
-      user = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      console.log('Decoded user from token:', user);
-      if (!user) window.location.href = '/';
-    } catch (e) {
-      console.error('Invalid token:', e);
-      window.location.href = '/';
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return null;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(jsonPayload);
+      } catch {
+        return null;
+      }
     }
 
-    const addForm = document.getElementById('addCategoryForm');
-    const addSuccess = document.getElementById('addSuccess');
-    const categoryList = document.getElementById('categoryList');
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof loadSidebar === 'function') loadSidebar();
 
-    // Load categories
-    function loadCategories() {
-      fetch('/api/categories', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to load categories');
-          return res.json();
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/';
+        return;
+      }
+
+      const user = parseJwt(token);
+      if (!user) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        return;
+      }
+
+      document.getElementById('welcomeMessage').textContent =
+        `Welcome back, ${user.name || user.username || 'User'}! Manage your job categories efficiently.`;
+
+      document.getElementById('profileBtn').addEventListener('click', () => {
+        window.location.href = '/profile.html';
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      });
+
+      const addForm = document.getElementById('addCategoryForm');
+      const addSuccess = document.getElementById('addSuccess');
+      const categoryList = document.getElementById('categoryList');
+
+      // Load categories
+      function loadCategories() {
+        fetch('/api/categories', {
+          headers: { 'Authorization': `Bearer ${token}` }
         })
-        .then(categories => {
-          categoryList.innerHTML = '';
-          if (!categories.length) {
-            categoryList.innerHTML = '<li class="collection-item">No categories found.</li>';
-            return;
-          }
-          categories.forEach(cat => {
-            const li = document.createElement('li');
-            li.className = 'collection-item';
-            li.innerHTML = `
-              <div>${cat.name} - ${cat.description || 'No description'}</div>
-              <div class="job-actions">
-                <a href="/category-edit.html?id=${cat._id}" class="btn-small">Edit</a>
-                <button class="btn-small red delete-category" data-id="${cat._id}">Delete</button>
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to load categories');
+            return res.json();
+          })
+          .then(categories => {
+            categoryList.innerHTML = '';
+            
+            if (!categories.length) {
+              categoryList.innerHTML = `
+                <div class="empty-state">
+                  <i class="material-icons">category</i>
+                  <p>No categories found</p>
+                  <p style="font-size: 0.9em; margin-top: 10px;">Create your first category to get started!</p>
+                </div>
+              `;
+              return;
+            }
+
+            categories.forEach(cat => {
+              const categoryItem = document.createElement('div');
+              categoryItem.className = 'manage-item';
+              categoryItem.innerHTML = `
+                <div class="category-name">
+                  ${cat.name}
+                  <span class="stats-badge">${cat.jobCount || 0} jobs</span>
+                </div>
+                <div class="category-description ${!cat.description ? 'no-description' : ''}">
+                  ${cat.description || 'No description provided'}
+                </div>
+                <div class="manage-actions">
+                  <a href="/category-edit.html?id=${cat._id}" class="icon-btn edit-btn" title="Edit Category">
+                    <i class="material-icons" style="font-size: 18px;">edit</i>
+                  </a>
+                  <button class="icon-btn delete-btn" data-id="${cat._id}" title="Delete Category">
+                    <i class="material-icons" style="font-size: 18px;">delete</i>
+                  </button>
+                </div>
+              `;
+              categoryList.appendChild(categoryItem);
+            });
+
+            // Attach delete events
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+              btn.addEventListener('click', () => {
+                const categoryId = btn.dataset.id;
+                const categoryName = btn.closest('.manage-item').querySelector('.category-name').textContent.split('\n')[0].trim();
+                
+                if (confirm(`Are you sure you want to delete the category "${categoryName}"? This action cannot be undone.`)) {
+                  fetch(`/api/categories/${categoryId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                  })
+                    .then(res => {
+                      if (res.ok) {
+                        showMessage('Category deleted successfully!', 'success');
+                        loadCategories();
+                      } else {
+                        throw new Error('Failed to delete category');
+                      }
+                    })
+                    .catch(err => {
+                      console.error('Delete error:', err);
+                      showMessage('Failed to delete category. It might be in use by existing jobs.', 'error');
+                    });
+                }
+              });
+            });
+          })
+          .catch(err => {
+            console.error('Load error:', err);
+            categoryList.innerHTML = `
+              <div class="empty-state">
+                <i class="material-icons">error_outline</i>
+                <p>Error loading categories</p>
+                <p style="font-size: 0.9em; margin-top: 10px;">Please try refreshing the page</p>
               </div>
             `;
-            categoryList.appendChild(li);
           });
+      }
 
-          // Attach delete events
-          document.querySelectorAll('.delete-category').forEach(btn => {
-            btn.addEventListener('click', () => {
-              if (confirm('Are you sure you want to delete this category?')) {
-                fetch(`/api/categories/${btn.dataset.id}`, {
-                  method: 'DELETE',
-                  headers: { 'Authorization': `Bearer ${token}` }
-                })
-                  .then(res => {
-                    if (res.ok) loadCategories();
-                  })
-                  .catch(err => console.error('Delete error:', err));
-              }
-            });
+      // Add category
+      addForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const submitBtn = addForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="material-icons" style="vertical-align: middle; margin-right: 8px;">hourglass_empty</i> Adding...';
+        submitBtn.disabled = true;
+
+        const data = {
+          name: addForm.name.value,
+          description: addForm.description.value
+        };
+
+        fetch('/api/categories', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(data)
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to add category');
+            addForm.reset();
+            showMessage('🎉 Category added successfully!', 'success');
+            loadCategories();
+          })
+          .catch(err => {
+            console.error('Add error:', err);
+            showMessage('❌ Failed to add category. It might already exist.', 'error');
+          })
+          .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
           });
-        })
-        .catch(err => console.error('Load error:', err));
-    }
-    loadCategories();
+      });
 
-    // Add category
-    addForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const data = { name: addForm.name.value, description: addForm.description.value };
-      fetch('/api/categories', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify(data)
-      })
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to add category');
-          addForm.reset();
-          addSuccess.textContent = 'Category added successfully!';
-          addSuccess.style.display = 'block';
-          setTimeout(() => { addSuccess.style.display = 'none'; }, 3000);
-          loadCategories();
-        })
-        .catch(err => console.error('Add error:', err));
-    });
+      // Helper function to show messages
+      function showMessage(message, type) {
+        addSuccess.textContent = message;
+        addSuccess.style.display = 'block';
+        addSuccess.style.color = type === 'success' ? '#059669' : '#dc2626';
+        addSuccess.style.borderColor = type === 'success' ? '#10b981' : '#ef4444';
+        addSuccess.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        
+        setTimeout(() => {
+          addSuccess.style.display = 'none';
+        }, 5000);
+      }
 
-    // Logout and profile logic
-    document.getElementById('profileBtn').addEventListener('click', () => window.location.href = '/profile.html');
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      window.location.href = '/';
+      // Initialize
+      loadCategories();
     });
-  });
-</script>
+  </script>
 </body>
 </html>

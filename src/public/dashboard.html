@@ -1,16 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard</title>
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/styles.css" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <style>
+    /* light defaults in case styles.css lacks these */
+    .cards { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin:16px 0; }
+    .card { background:#fff; border:1px solid #e6e6e6; border-radius:12px; padding:16px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+    .card h3 { margin:0 0 8px; font-size:14px; color:#666; font-weight:600; }
+    .card .num { font-size:28px; font-weight:700; }
+    .section { margin:24px 0; }
+    .section h2 { margin:0 0 12px; font-size:18px; }
+    .table { width:100%; border-collapse:collapse; }
+    .table th, .table td { padding:10px 12px; border-bottom:1px solid #eee; text-align:left; }
+    .badge { display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; background:#f2f2f2; }
+    .btn { padding:6px 10px; border-radius:8px; border:1px solid #ddd; background:#fafafa; cursor:pointer; }
+    .btn.approve { border-color:#b7e4c7; background:#e9f7ef; }
+    .btn.reject { border-color:#ffc9c9; background:#fff5f5; }
+    .quick-actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .quick-actions a { text-decoration:none; }
+    .muted { color:#777; }
+  </style>
 </head>
-
 <body>
-  <!-- Sidebar -->
+  <!-- Sidebar (kept as-is) -->
   <div class="sidebar" id="sidebar"></div>
 
   <!-- Top bar -->
@@ -24,59 +40,233 @@
   <!-- Main content -->
   <main class="main-content">
     <h4 class="welcome">Welcome to Dashboard</h4>
-    <p id="welcomeMessage"></p>
+    <p id="welcomeMessage" class="muted"></p>
+
+    <!-- Summary cards (admin only) -->
+    <section id="summary" class="section" style="display:none;">
+      <h2>Summary</h2>
+      <div class="cards">
+        <div class="card"><h3>Total Users</h3><div class="num" id="usersCount">15</div></div>
+        <div class="card"><h3>Active Jobs</h3><div class="num" id="jobsCount">—</div></div>
+        <div class="card"><h3>Courses</h3><div class="num" id="coursesCount">—</div></div>
+        <div class="card"><h3>Pending Profile Updates</h3><div class="num" id="pendingCount">—</div></div>
+      </div>
+    </section>
+
+    <!-- Pending approvals (admin only) -->
+    <section id="approvals" class="section" style="display:none;">
+      <h2>Pending Profile Approvals</h2>
+      <table class="table" id="approvalsTable">
+        <thead>
+          <tr>
+            <th>User</th><th>Requested Changes</th><th>Requested At</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="approvalsBody">
+          <tr><td colspan="4" class="muted">Loading…</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Recent users (admin only) -->
+    <section id="recentUsers" class="section" style="display:none;">
+      <h2>Recent Users</h2>
+      <table class="table" id="usersTable">
+        <thead>
+          <tr>
+            <th>Name</th><th>Email</th><th>Role</th><th>State</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="usersBody">
+          <tr><td colspan="5" class="muted">Loading…</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Quick actions (admin only) -->
+    <section id="quickActions" class="section" style="display:none;">
+      <h2>Quick Actions</h2>
+      <div class="quick-actions">
+        <a class="btn" href="/category-manage">Manage Categories</a>
+        <a class="btn" href="/courses/manage">Manage Courses</a>
+        <a class="btn" href="/job-post">Post a Job</a>
+        <a class="btn" href="/job-edit">Edit Jobs</a>
+      </div>
+    </section>
   </main>
 
   <!-- Sidebar component -->
   <script src="/components/sidebar.js"></script>
   <script>
+    // JWT parser
     function parseJwt(token) {
       try {
         const base64Url = token.split('.')[1];
         if (!base64Url) return null;
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
         return JSON.parse(jsonPayload);
-      } catch {
+      } catch { return null; }
+    }
+
+    // API config with graceful fallbacks
+    const API = {
+      // preferred admin endpoints
+      stats: '/api/admin/stats',
+      profileRequests: '/api/admin/profile-requests?status=pending',
+      approveProfileRequest: id => `/api/admin/profile-requests/${id}/approve`,
+      rejectProfileRequest: id => `/api/admin/profile-requests/${id}/reject`,
+      usersAdmin: '/api/admin/users?limit=10&sort=-createdAt',
+      // general fallbacks
+      users: '/api/users?limit=10',
+      courses: '/api/courses?limit=100',
+      jobs: '/api/jobs?limit=100'
+    };
+
+    const headers = (token) => ({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+
+    async function safeGet(url, token) {
+      try {
+        const res = await fetch(url, { headers: headers(token) });
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      } catch (_) {
         return null;
       }
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      if (typeof loadSidebar === "function") {
-        loadSidebar();
-      }
-
-      const token = localStorage.getItem("token");
-      if (!token) {
-        window.location.href = "/";
+    async function loadSummary(token) {
+      // try combined stats endpoint first
+      const combined = await safeGet(API.stats, token);
+      if (combined && typeof combined === 'object') {
+        setCount('usersCount', combined.users ?? '0');
+        setCount('jobsCount', combined.jobs ?? '0');
+        setCount('coursesCount', combined.courses ?? '0');
+        setCount('pendingCount', combined.pendingProfileUpdates ?? '0');
         return;
       }
+      // fall back to separate lists and count them
+      const [users, jobs, courses, pending] = await Promise.all([
+        safeGet(API.users, token) || [],
+        safeGet(API.jobs, token) || [],
+        safeGet(API.courses, token) || [],
+        safeGet(API.profileRequests, token) || []
+      ]);
+      setCount('usersCount', Array.isArray(users) ? users.length : (users?.data?.length ?? '0'));
+      setCount('jobsCount', Array.isArray(jobs) ? jobs.length : (jobs?.data?.length ?? '0'));
+      setCount('coursesCount', Array.isArray(courses) ? courses.length : (courses?.data?.length ?? '0'));
+      setCount('pendingCount', Array.isArray(pending) ? pending.length : (pending?.data?.length ?? '0'));
+    }
+
+    function setCount(id, n) {
+      document.getElementById(id).textContent = String(n);
+    }
+
+    async function loadApprovals(token) {
+      const data = await safeGet(API.profileRequests, token);
+      const tbody = document.getElementById('approvalsBody');
+      tbody.innerHTML = '';
+      const items = Array.isArray(data) ? data : (data?.data ?? []);
+      if (!items || items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="muted">No pending requests.</td></tr>`;
+        return;
+      }
+      for (const req of items) {
+        const tr = document.createElement('tr');
+        const userName = req.user?.name || req.userName || req.user || '—';
+        const when = req.createdAt ? new Date(req.createdAt).toLocaleString() : '—';
+        const updates = req.updates || req.pendingApproval || {};
+        const pretty = Object.keys(updates).length ? JSON.stringify(updates) : '—';
+        tr.innerHTML = `
+          <td>${userName}</td>
+          <td><code>${pretty}</code></td>
+          <td>${when}</td>
+          <td>
+            <button class="btn approve" data-id="${req._id}" data-action="approve">Approve</button>
+            <button class="btn reject" data-id="${req._id}" data-action="reject">Reject</button>
+          </td>`;
+        tbody.appendChild(tr);
+      }
+      tbody.addEventListener('click', async (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        const action = btn.getAttribute('data-action');
+        const url = action === 'approve' ? API.approveProfileRequest(id) : API.rejectProfileRequest(id);
+        btn.disabled = true;
+        try {
+          const res = await fetch(url, { method: 'POST', headers: headers(token) });
+          if (res.ok) btn.closest('tr').remove();
+        } catch (_) { /* ignore */ }
+        finally { btn.disabled = false; }
+      }, { once: true });
+    }
+
+    async function loadRecentUsers(token) {
+      // prefer admin listing for richer fields
+      let data = await safeGet(API.usersAdmin, token);
+      if (!data) data = await safeGet(API.users, token);
+      const tbody = document.getElementById('usersBody');
+      tbody.innerHTML = '';
+      const list = Array.isArray(data) ? data : (data?.data ?? data?.users ?? []);
+      if (!list || list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="muted">No users found.</td></tr>`;
+        return;
+      }
+      for (const u of list) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${u.name || '—'}</td>
+          <td>${u.email || '—'}</td>
+          <td><span class="badge">${u.role || 'user'}</span></td>
+          <td>${u.state || '—'}</td>
+          <td>${u.active === false ? '<span class="badge">inactive</span>' : '<span class="badge">active</span>'}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (typeof loadSidebar === 'function') loadSidebar();
+
+      const token = localStorage.getItem('token');
+      if (!token) { window.location.href = '/'; return; }
 
       const user = parseJwt(token);
       if (!user) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/";
-        return;
+        localStorage.removeItem('token'); localStorage.removeItem('user');
+        window.location.href = '/'; return;
       }
 
-      document.getElementById("welcomeMessage").textContent =
-        `Hello, ${user.name || user.username || "User"} (${user.role || "user"})`;
+      document.getElementById('welcomeMessage').textContent =
+        `Hello, ${user.name || user.username || 'User'} (${user.role || 'user'})`;
 
-      document.getElementById("profileBtn").addEventListener("click", () => {
-        window.location.href = "/profile.html";
+      document.getElementById('profileBtn').addEventListener('click', () => {
+        window.location.href = '/profile.html';
       });
 
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/";
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('token'); localStorage.removeItem('user');
+        window.location.href = '/';
       });
+
+      const isAdmin = (user.role || '').toLowerCase() === 'admin';
+      if (!isAdmin) return; // non-admins just see welcome
+
+      // show admin sections
+      document.getElementById('summary').style.display = '';
+      document.getElementById('approvals').style.display = '';
+      document.getElementById('recentUsers').style.display = '';
+      document.getElementById('quickActions').style.display = '';
+
+      await Promise.all([
+        loadSummary(token),
+        loadApprovals(token),
+        loadRecentUsers(token)
+      ]);
     });
   </script>
 </body>
-
 </html>
