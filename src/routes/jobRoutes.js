@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const jobController = require('../controllers/jobController');
+const matchController = require('../controllers/jobMatchController');
+const { authenticate } = require('../middleware/authMiddleware');
 
 // Protect these routes with authentication middleware (to be added later)
 router.post('/jobs', jobController.createJob); // route for job post
@@ -18,5 +20,7 @@ router.get('/categories', jobController.getCategories);
 router.post('/categories', jobController.createCategory);
 router.put('/categories/:id', jobController.updateCategory);
 router.delete('/categories/:id', jobController.deleteCategory);
+
+router.get('/jobs/match', authenticate, matchController.match);
 
 module.exports = router;
