@@ -1,5 +1,4 @@
 const path = require("path");
-
 const rootDir = path.resolve(__dirname, "../..");
 
 module.exports = {
@@ -9,6 +8,9 @@ module.exports = {
   setupFilesAfterEnv: ["<rootDir>/testing/api/setup.js"],
   collectCoverageFrom: ["src/**/*.{js,jsx}"],
   coveragePathIgnorePatterns: ["/node_modules/"],
+  moduleNameMapper: {
+    '^src/(.*)$': '<rootDir>/src/$1',
+  },
   reporters: [
     "default",
     [
