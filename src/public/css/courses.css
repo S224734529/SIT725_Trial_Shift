@@ -466,6 +466,26 @@ body {
   }
 }
 
+.course-meta {
+  display: grid;
+  gap: 6px;
+  margin: 16px 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.course-meta__item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #1f2937;
+}
+.course-meta__label {
+  font-weight: 600;
+}
+.course-meta__value {
+  color: inherit;
+}
+
 /* Legacy */
 .manage-list-item {
   display: flex;

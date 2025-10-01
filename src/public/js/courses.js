@@ -757,11 +757,19 @@
       if (elTitle) elTitle.textContent = m.title || '';
 
       if (elMeta) {
-        const parts = [];
-        if (m.category) parts.push(`Category: ${m.category}`);
-        if (m.role) parts.push(`Role: ${m.role}`);
-        if (m.createdAt) parts.push(`Created: ${new Date(m.createdAt).toLocaleString()}`);
-        elMeta.textContent = parts.join(' - ');
+        const metaItems = [];
+        if (m.category) metaItems.push(['Category', m.category]);
+        if (m.role) metaItems.push(['Role', m.role]);
+        if (m.createdAt) metaItems.push(['Created', new Date(m.createdAt).toLocaleString()]);
+        if (metaItems.length) {
+          elMeta.innerHTML = metaItems
+            .map(([label, value]) => `<div class="course-meta__item"><span class="course-meta__label">${escapeHtml(label)}:</span> <span class="course-meta__value">${escapeHtml(String(value))}</span></div>`)
+            .join('');
+          elMeta.style.display = '';
+        } else {
+          elMeta.innerHTML = '';
+          elMeta.style.display = 'none';
+        }
       }
 
       if (elContent) {
@@ -860,3 +868,4 @@
   });
   document.addEventListener("DOMContentLoaded", loadAll);
 })();
+
