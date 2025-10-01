@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Edit Category - Trial Shift</title>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/category-manage.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/category-manage.css" />
 </head>
+
 <body>
   <!-- Sidebar -->
   <div class="sidebar" id="sidebar"></div>
@@ -19,38 +21,61 @@
     </div>
   </header>
 
+  <!-- Main content -->
   <main class="main-content">
-    <h4>Edit Category</h4>
-    <div class="container">
-      <div class="row">
-        <div class="col s12">
-          <div class="card">
-            <div class="card-content">
-              <form id="editCategoryForm" class="col s12">
-                <input type="hidden" id="categoryId" name="id">
-                <div class="row">
-                  <div class="input-field col s12">
-                    <input type="text" id="categoryName" name="name" required>
-                    <label for="categoryName">Category Name</label>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="input-field col s12">
-                    <textarea id="categoryDescription" name="description" class="materialize-textarea"></textarea>
-                    <label for="categoryDescription">Description (Optional)</label>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col s12">
-                    <button type="submit" class="btn">Update Category</button>
-                  </div>
-                </div>
-              </form>
+    <div class="category-container">
+      <!-- Welcome Section -->
+      <div class="welcome-section">
+        <h4>Edit Category</h4>
+        <p id="welcomeMessage">Update your category details and description</p>
+      </div>
+
+      <!-- Main Grid Layout -->
+      <div class="category-grid">
+        <!-- Edit Category Card -->
+        <div class="category-card">
+          <h4>✏️ Edit Category</h4>
+          <p class="muted">Update the category information below to keep your job classifications organized</p>
+          
+          <form id="editCategoryForm" class="form-grid">
+            <input type="hidden" id="categoryId" name="id">
+            
+            <div class="row">
+              <label class="form-label">Category Name</label>
+              <input type="text" id="categoryName" name="name" class="soft-input" placeholder="e.g., Software Development, Marketing" required>
             </div>
-            <!-- Success message aligned below card content -->
-            <div id="editSuccess" 
-                 class="green-text center-align" 
-                 style="display: none; padding: 10px; font-weight: 500;">
+
+            <div class="row">
+              <label class="form-label">Description <span class="muted">(Optional)</span></label>
+              <textarea id="categoryDescription" name="description" class="soft-textarea" placeholder="Brief description of this category..."></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-cta">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">update</i>
+                Update Category
+              </button>
+              <a href="/category-manage.html" class="btn-soft">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">arrow_back</i>
+                Back to Categories
+              </a>
+            </div>
+          </form>
+          
+          <div id="editSuccess" class="success-message"></div>
+          <div id="editError" class="success-message" style="display: none;"></div>
+        </div>
+
+        <!-- Category Preview Card -->
+        <div class="categories-card">
+          <h4>👁️ Category Preview</h4>
+          <p class="muted" style="color: #6b7280;">This is how your category will appear in the system</p>
+          
+          <div class="manage-list" id="categoryPreview">
+            <div class="empty-state">
+              <i class="material-icons">category</i>
+              <p>Category preview will appear here</p>
+              <p style="font-size: 0.9em; margin-top: 10px;">Fill out the form to see a preview</p>
             </div>
           </div>
         </div>
@@ -58,86 +83,196 @@
     </div>
   </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <!-- Sidebar component -->
   <script src="/components/sidebar.js"></script>
+
   <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    if (typeof loadSidebar === 'function') loadSidebar();
-
-    const token = localStorage.getItem('token');
-    if (!token) window.location.href = '/';
-
-    // Try to decode token (optional, but don't force role check here)
-    try {
-      const user = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
-      console.log("Decoded user:", user);
-    } catch (e) {
-      console.error('Invalid token:', e);
-      window.location.href = '/';
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return null;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(jsonPayload);
+      } catch {
+        return null;
+      }
     }
 
-    const editForm = document.getElementById('editCategoryForm');
-    const editSuccess = document.getElementById('editSuccess');
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof loadSidebar === 'function') loadSidebar();
 
-    // Get category ID from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const categoryId = urlParams.get('id');
-    if (!categoryId) {
-      alert('No category selected for editing.');
-      window.location.href = '/category-manage.html';
-      return;
-    }
-    document.getElementById('categoryId').value = categoryId;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/';
+        return;
+      }
 
-    // Fetch category data
-    fetch(`/api/categories/${categoryId}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Category not found');
-        return res.json();
-      })
-      .then(category => {
-        document.getElementById('categoryName').value = category.name || '';
-        document.getElementById('categoryDescription').value = category.description || '';
-        M.updateTextFields();
-      })
-      .catch(err => console.error('Error fetching category:', err));
+      const user = parseJwt(token);
+      if (!user) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        return;
+      }
 
-    // Update category
-    editForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const data = {
-        name: editForm.name.value,
-        description: editForm.description.value
-      };
+      document.getElementById('welcomeMessage').textContent =
+        `Welcome back, ${user.name || user.username || 'User'}! Update your category details.`;
+
+      document.getElementById('profileBtn').addEventListener('click', () => {
+        window.location.href = '/profile.html';
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      });
+
+      const editForm = document.getElementById('editCategoryForm');
+      const editSuccess = document.getElementById('editSuccess');
+      const editError = document.getElementById('editError');
+
+      // Get category ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const categoryId = urlParams.get('id');
+      if (!categoryId) {
+        showMessage('No category selected for editing.', 'error');
+        setTimeout(() => {
+          window.location.href = '/category-manage.html';
+        }, 2000);
+        return;
+      }
+      document.getElementById('categoryId').value = categoryId;
+
+      // Fetch category data
       fetch(`/api/categories/${categoryId}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json', 
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify(data)
+        headers: { 'Authorization': `Bearer ${token}` }
       })
         .then(res => {
-          if (!res.ok) throw new Error('Failed to update category');
-          editSuccess.textContent = 'Category updated successfully!';
-          editSuccess.style.display = 'block';
-          setTimeout(() => { 
-            editSuccess.style.display = 'none'; 
-            window.location.href = '/category-manage.html'; 
-          }, 2000);
+          if (!res.ok) throw new Error('Category not found');
+          return res.json();
         })
-        .catch(err => console.error('Update error:', err));
-    });
+        .then(category => {
+          document.getElementById('categoryName').value = category.name || '';
+          document.getElementById('categoryDescription').value = category.description || '';
+          
+          // Update preview
+          updateCategoryPreview(category);
+        })
+        .catch(err => {
+          console.error('Error fetching category:', err);
+          showMessage('Error loading category data. Please try again.', 'error');
+        });
 
-    // Logout and profile logic
-    document.getElementById('profileBtn').addEventListener('click', () => window.location.href = '/profile.html');
-    document.getElementById('logoutBtn').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      window.location.href = '/';
+      // Update category preview
+      function updateCategoryPreview(category) {
+        const preview = document.getElementById('categoryPreview');
+        preview.innerHTML = `
+          <div class="manage-item">
+            <div class="category-name">
+              ${category.name || 'Category Name'}
+              <span class="stats-badge">${category.jobCount || 0} jobs</span>
+            </div>
+            <div class="category-description ${!category.description ? 'no-description' : ''}">
+              ${category.description || 'No description provided'}
+            </div>
+            <div class="manage-actions">
+              <span class="icon-btn edit-btn" style="background: #667eea;">
+                <i class="material-icons" style="font-size: 18px;">visibility</i>
+              </span>
+              <span style="color: #6b7280; font-size: 0.9em; margin-left: 10px;">
+                Preview Mode
+              </span>
+            </div>
+          </div>
+        `;
+      }
+
+      // Update category
+      editForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const submitBtn = editForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="material-icons" style="vertical-align: middle; margin-right: 8px;">hourglass_empty</i> Updating...';
+        submitBtn.disabled = true;
+
+        const data = {
+          name: editForm.name.value,
+          description: editForm.description.value
+        };
+
+        fetch(`/api/categories/${categoryId}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}` 
+          },
+          body: JSON.stringify(data)
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to update category');
+            return res.json();
+          })
+          .then(updatedCategory => {
+            showMessage('🎉 Category updated successfully!', 'success');
+            updateCategoryPreview(updatedCategory);
+            
+            // Redirect after success
+            setTimeout(() => {
+              window.location.href = '/category-manage.html';
+            }, 1500);
+          })
+          .catch(err => {
+            console.error('Update error:', err);
+            showMessage('❌ Failed to update category. It might already exist.', 'error');
+          })
+          .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+          });
+      });
+
+      // Real-time preview updates
+      editForm.addEventListener('input', function() {
+        const previewCategory = {
+          name: document.getElementById('categoryName').value,
+          description: document.getElementById('categoryDescription').value,
+          jobCount: 0 // Default for preview
+        };
+        updateCategoryPreview(previewCategory);
+      });
+
+      // Helper function to show messages
+      function showMessage(message, type) {
+        if (type === 'success') {
+          editSuccess.textContent = message;
+          editSuccess.style.display = 'block';
+          editSuccess.style.color = '#059669';
+          editSuccess.style.borderColor = '#10b981';
+          editSuccess.style.background = '#f0fdf4';
+          editError.style.display = 'none';
+        } else {
+          editError.textContent = message;
+          editError.style.display = 'block';
+          editError.style.color = '#dc2626';
+          editError.style.borderColor = '#ef4444';
+          editError.style.background = '#fef2f2';
+          editSuccess.style.display = 'none';
+        }
+        
+        setTimeout(() => {
+          editSuccess.style.display = 'none';
+          editError.style.display = 'none';
+        }, 5000);
+      }
+
+      // Initialize preview with empty values
+      updateCategoryPreview({ name: '', description: '', jobCount: 0 });
     });
-  });
   </script>
 </body>
 </html>
