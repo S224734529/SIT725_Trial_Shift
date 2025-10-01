@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Employer Dashboard</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <style>
+    .muted{color:#666}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .card{background:#fff;border:1px solid #e6e6e6;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+    .card h3{margin:0 0 8px;font-size:14px;color:#666;font-weight:600}
+    .num{font-size:26px;font-weight:700}
+    .section{margin:24px 0}
+    .section h2{margin:0 0 12px;font-size:18px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+    .job{border:1px solid #eee;border-radius:12px;padding:14px}
+    .job h4{margin:0 0 6px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn{padding:6px 10px;border-radius:8px;border:1px solid #ddd;background:#fafafa;cursor:pointer}
+    .btn.primary{border-color:#b7e4c7;background:#e9f7ef}
+    .btn.warn{border-color:#f5c2c7;background:#fff5f5}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:10px 12px;border-bottom:1px solid #eee;text-align:left}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    input[type="text"],input[type="number"],input[type="search"],textarea,select{
+      width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:8px
+    }
+    form .row > *{flex:1}
+    .banner{background:#fff3cd;border:1px solid #ffe69c;border-radius:12px;padding:10px 12px;margin:12px 0}
+  </style>
+</head>
+<body>
+  <!-- Sidebar (unchanged) -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-right">
+      <i class="material-icons profile-icon" id="profileBtn">account_circle</i>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main-content">
+    <h4 class="welcome">Employer Dashboard</h4>
+    <p id="welcomeMessage" class="muted"></p>
+    <div id="pendingNote" class="banner" style="display:none;">Your profile update is awaiting admin approval.</div>
+
+    <!-- Overview -->
+    <section class="section">
+      <h2>Overview</h2>
+      <div class="cards">
+        <div class="card"><h3>Open postings</h3><div class="num" id="openCount">—</div></div>
+        <div class="card"><h3>Total applicants</h3><div class="num" id="applCount">—</div></div>
+        <div class="card"><h3>Interviews scheduled</h3><div class="num" id="interviewCount">—</div></div>
+        <div class="card"><h3>Offers</h3><div class="num" id="offerCount">—</div></div>
+      </div>
+    </section>
+
+    <!-- Create posting -->
+    <section class="section">
+      <h2>Post a New Job</h2>
+      <form id="newJobForm" class="card">
+        <div class="row">
+          <div><label>Title</label><input id="jobTitle" type="text" required></div>
+          <div><label>Company</label><input id="jobCompany" type="text" required></div>
+        </div>
+        <div class="row">
+          <div><label>Category</label><input id="jobCategory" type="text" placeholder="e.g. Software"></div>
+          <div><label>State/Location</label><input id="jobState" type="text" placeholder="e.g. VIC"></div>
+          <div><label>Salary</label><input id="jobSalary" type="number" min="0" step="1000" placeholder="e.g. 90000"></div>
+        </div>
+        <div class="row">
+          <div><label>Skills (comma separated)</label><input id="jobSkills" type="text" placeholder="Node.js, MongoDB"></div>
+        </div>
+        <div><label>Description</label><textarea id="jobDescription" rows="4" placeholder="Short description"></textarea></div>
+        <div class="row" style="margin-top:10px">
+          <div><button class="btn primary" type="submit">Publish</button></div>
+          <div><span id="jobFormMsg" class="muted"></span></div>
+        </div>
+      </form>
+    </section>
+
+    <!-- My postings -->
+    <section class="section">
+      <div class="row" style="justify-content:space-between">
+        <h2>Your Postings</h2>
+        <div class="toolbar">
+          <input type="search" id="jobSearch" placeholder="Search by title or status">
+          <select id="statusFilter">
+            <option value="">All statuses</option>
+            <option>open</option>
+            <option>closed</option>
+            <option>draft</option>
+          </select>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr><th>Title</th><th>Status</th><th>Created</th><th>Applicants</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="jobsBody"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </section>
+
+    <!-- Applications for selected job -->
+    <section class="section">
+      <h2>Applications <span id="selectedJobTitle" class="muted"></span></h2>
+      <table class="table">
+        <thead>
+          <tr><th>Candidate</th><th>Email</th><th>Status</th><th>Interview</th><th>Actions</th></tr>
+        </thead>
+        <tbody id="applicantsBody"><tr><td colspan="5" class="muted">Select a posting to view applications.</td></tr></tbody>
+      </table>
+    </section>
+  </main>
+
+  <!-- Sidebar component -->
+  <script src="/components/sidebar.js"></script>
+  <script>
+    // Read JWT
+    function parseJwt(token){
+      try{
+        const b = token.split('.')[1]; if(!b) return null;
+        const p = decodeURIComponent(atob(b).split('').map(c=>'%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        return JSON.parse(p);
+      }catch{return null;}
+    }
+
+    // API endpoints (adjust if your routes differ)
+    const API = {
+      me: '/api/users/me',
+      jobsMine: '/api/jobs/mine',
+      jobs: '/api/jobs',
+      job: id => `/api/jobs/${id}`,
+      jobClose: id => `/api/jobs/${id}/close`,
+      jobApps: id => `/api/jobs/${id}/applications`,
+      applicationsQuery: jobId => `/api/applications?job=${jobId}`,
+      application: id => `/api/applications/${id}`
+    };
+
+    const authHeaders = t => ({ 'Content-Type':'application/json', 'Authorization':`Bearer ${t}` });
+
+    async function jsonFetch(url, opts={}){
+      const res = await fetch(url, opts);
+      if(!res.ok) throw new Error(res.statusText || 'Request failed');
+      return res.json().catch(()=>null);
+    }
+    async function safeGet(url, t){
+      try{ return await jsonFetch(url,{headers:authHeaders(t)}); }catch{ return null; }
+    }
+
+    // Data helpers
+    async function loadMyJobs(token, user){
+      // Try /mine first, fall back to /api/jobs and filter by owner fields
+      let list = await safeGet(API.jobsMine, token);
+      if(!Array.isArray(list)){
+        const all = await safeGet(API.jobs, token) || [];
+        const uid = user.id || user._id;
+        list = (Array.isArray(all) ? all : all.data || [])
+          .filter(j => j.owner===uid || j.createdBy===uid || j.employer===uid || j.postedBy===uid);
+      }
+      return list || [];
+    }
+    async function loadApplications(token, jobId){
+      let rows = await safeGet(API.jobApps(jobId), token);
+      if(!Array.isArray(rows)){
+        const r = await safeGet(API.applicationsQuery(jobId), token);
+        rows = Array.isArray(r) ? r : (r && r.data) || [];
+      }
+      return rows || [];
+    }
+
+    async function createJob(token, payload){
+      return jsonFetch(API.jobs, {method:'POST', headers:authHeaders(token), body:JSON.stringify(payload)});
+    }
+    async function closeJob(token, id){
+      // prefer patch; try explicit close endpoint as fallback
+      try{
+        return await jsonFetch(API.job(id), {method:'PATCH', headers:authHeaders(token), body:JSON.stringify({status:'closed'})});
+      }catch{
+        try{
+          return await jsonFetch(API.jobClose(id), {method:'POST', headers:authHeaders(token)});
+        }catch{return null;}
+      }
+    }
+    async function setAppStatus(token, app, status, jobId){
+      const body = {status};
+      try{
+        return await jsonFetch(API.application(app), {method:'PATCH', headers:authHeaders(token), body:JSON.stringify(body)});
+      }catch{
+        try{
+          return await jsonFetch(`/api/jobs/${jobId}/applications/${app}`, {method:'PATCH', headers:authHeaders(token), body:JSON.stringify(body)});
+        }catch{return null;}
+      }
+    }
+    async function scheduleInterview(token, app, when, jobId){
+      const body = {interviewDate: when, status: 'interview'};
+      try{
+        return await jsonFetch(API.application(app), {method:'PATCH', headers:authHeaders(token), body:JSON.stringify(body)});
+      }catch{
+        try{
+          return await jsonFetch(`/api/jobs/${jobId}/applications/${app}/interview`, {method:'POST', headers:authHeaders(token), body:JSON.stringify({when})});
+        }catch{return null;}
+      }
+    }
+
+    // Render
+    function setOverview(jobs, appsMap){
+      const open = jobs.filter(j => (j.status||'open')==='open').length;
+      const totalApps = Object.values(appsMap).reduce((a,b)=>a+(b?.length||0),0);
+      const interviews = Object.values(appsMap)
+        .flat().filter(a => a?.status==='interview' || a?.interviewDate).length;
+      const offers = Object.values(appsMap)
+        .flat().filter(a => (a?.status||'').toLowerCase()==='offer' || (a?.status||'').toLowerCase()==='offered').length;
+
+      document.getElementById('openCount').textContent = open;
+      document.getElementById('applCount').textContent = totalApps;
+      document.getElementById('interviewCount').textContent = interviews;
+      document.getElementById('offerCount').textContent = offers;
+    }
+
+    function renderJobs(jobs, appsMap){
+      const tb = document.getElementById('jobsBody'); tb.innerHTML='';
+      if(!jobs.length){ tb.innerHTML = '<tr><td colspan="5" class="muted">No postings yet.</td></tr>'; return; }
+      for(const j of jobs){
+        const tr = document.createElement('tr');
+        const created = j.createdAt ? new Date(j.createdAt).toLocaleDateString() : '—';
+        const appCount = (appsMap[j._id]?.length) || 0;
+        tr.innerHTML = `
+          <td>${j.title || 'Untitled'}</td>
+          <td><span class="pill">${j.status || 'open'}</span></td>
+          <td>${created}</td>
+          <td>${appCount}</td>
+          <td class="row">
+            <button class="btn primary" data-view="${j._id}" data-title="${j.title || ''}">View</button>
+            <button class="btn warn" data-close="${j._id}">Close</button>
+          </td>`;
+        tb.appendChild(tr);
+      }
+    }
+
+    function renderApps(jobId, jobTitle, rows){
+      const tb = document.getElementById('applicantsBody'); tb.innerHTML='';
+      document.getElementById('selectedJobTitle').textContent = jobTitle ? `for “${jobTitle}”` : '';
+      if(!rows.length){ tb.innerHTML = '<tr><td colspan="5" class="muted">No applications for this posting.</td></tr>'; return; }
+      for(const r of rows){
+        const tr = document.createElement('tr');
+        const name = r.user?.name || r.name || '—';
+        const email = r.user?.email || r.email || '—';
+        const status = r.status || 'submitted';
+        const when = r.interviewDate ? new Date(r.interviewDate).toLocaleString() : '';
+        tr.innerHTML = `
+          <td>${name}</td>
+          <td>${email}</td>
+          <td><span class="pill">${status}</span></td>
+          <td>${when || '<input type="datetime-local" style="min-width:210px" data-pick="'+r._id+'">'}</td>
+          <td class="row">
+            <button class="btn" data-shortlist="${r._id}" data-job="${jobId}">Shortlist</button>
+            <button class="btn warn" data-reject="${r._id}" data-job="${jobId}">Reject</button>
+            <button class="btn primary" data-schedule="${r._id}" data-job="${jobId}">Schedule</button>
+          </td>`;
+        tb.appendChild(tr);
+      }
+    }
+
+    function bindJobFilters(allJobs, appsMap){
+      const q = document.getElementById('jobSearch');
+      const s = document.getElementById('statusFilter');
+      function run(){
+        const qq = q.value.trim().toLowerCase();
+        const st = s.value;
+        const list = allJobs.filter(j=>{
+          const okQ = !qq || (j.title||'').toLowerCase().includes(qq) || (j.status||'').toLowerCase().includes(qq);
+          const okS = !st || (j.status||'open')===st;
+          return okQ && okS;
+        });
+        renderJobs(list, appsMap);
+      }
+      q.addEventListener('input', run);
+      s.addEventListener('change', run);
+      run();
+    }
+
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      if(typeof loadSidebar === 'function') loadSidebar();
+
+      const token = localStorage.getItem('token');
+      if(!token){ window.location.href='/'; return; }
+      const user = parseJwt(token);
+      if(!user){ localStorage.removeItem('token'); window.location.href='/'; return; }
+
+      // steer users by role
+      const role = (user.role||'').toLowerCase();
+      if(role==='admin'){ window.location.href='/dashboard.html'; return; }
+      if(role==='jobseeker' || role==='user'){ window.location.href='/dashboard-seeker.html'; return; }
+
+      document.getElementById('welcomeMessage').textContent =
+        `Hello, ${user.name || user.username || 'Employer'} (${user.role || 'employer'})`;
+
+      document.getElementById('profileBtn').addEventListener('click',()=>window.location.href='/profile.html');
+      document.getElementById('logoutBtn').addEventListener('click',()=>{
+        localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/';
+      });
+
+      // Profile/approval banner
+      const me = await safeGet(API.me, token);
+      if(me?.pendingApproval || me?.pendingApproval === true){
+        document.getElementById('pendingNote').style.display='';
+      }
+
+      // Load jobs and applications
+      const jobs = await loadMyJobs(token, user);
+      const appsByJob = {};
+      for(const j of jobs){
+        appsByJob[j._id] = await loadApplications(token, j._id);
+      }
+
+      setOverview(jobs, appsByJob);
+      renderJobs(jobs, appsByJob);
+      bindJobFilters(jobs, appsByJob);
+
+      // Click handlers (view, close, shortlist, reject, schedule)
+      document.addEventListener('click', async (e)=>{
+        const viewId = e.target?.getAttribute?.('data-view');
+        const closeId = e.target?.getAttribute?.('data-close');
+        const shortlistId = e.target?.getAttribute?.('data-shortlist');
+        const rejectId = e.target?.getAttribute?.('data-reject');
+        const scheduleId = e.target?.getAttribute?.('data-schedule');
+
+        if(viewId){
+          const title = e.target.getAttribute('data-title') || '';
+          const rows = await loadApplications(token, viewId);
+          appsByJob[viewId] = rows;
+          renderApps(viewId, title, rows);
+        }
+
+        if(closeId){
+          e.target.disabled = true;
+          await closeJob(token, closeId);
+          const idx = jobs.findIndex(j=>j._id===closeId);
+          if(idx>-1){ jobs[idx].status='closed'; }
+          setOverview(jobs, appsByJob);
+          renderJobs(jobs, appsByJob);
+          e.target.disabled = false;
+        }
+
+        if(shortlistId){
+          const jobId = e.target.getAttribute('data-job');
+          await setAppStatus(token, shortlistId, 'shortlist', jobId);
+          const rows = await loadApplications(token, jobId);
+          appsByJob[jobId]=rows;
+          renderApps(jobId, jobs.find(j=>j._id===jobId)?.title, rows);
+          setOverview(jobs, appsByJob);
+        }
+
+        if(rejectId){
+          const jobId = e.target.getAttribute('data-job');
+          await setAppStatus(token, rejectId, 'rejected', jobId);
+          const rows = await loadApplications(token, jobId);
+          appsByJob[jobId]=rows;
+          renderApps(jobId, jobs.find(j=>j._id===jobId)?.title, rows);
+          setOverview(jobs, appsByJob);
+        }
+
+        if(scheduleId){
+          const jobId = e.target.getAttribute('data-job');
+          const input = document.querySelector(`input[data-pick="${scheduleId}"]`);
+          const when = input?.value;
+          if(when){ await scheduleInterview(token, scheduleId, when, jobId); }
+          const rows = await loadApplications(token, jobId);
+          appsByJob[jobId]=rows;
+          renderApps(jobId, jobs.find(j=>j._id===jobId)?.title, rows);
+          setOverview(jobs, appsByJob);
+        }
+      });
+
+      // Create posting
+      document.getElementById('newJobForm').addEventListener('submit', async (e)=>{
+        e.preventDefault();
+        const msg = document.getElementById('jobFormMsg');
+        msg.textContent = 'Publishing…';
+        const payload = {
+          title: document.getElementById('jobTitle').value.trim(),
+          company: document.getElementById('jobCompany').value.trim(),
+          category: document.getElementById('jobCategory').value.trim(),
+          state: document.getElementById('jobState').value.trim(),
+          salary: Number(document.getElementById('jobSalary').value)||undefined,
+          skills: document.getElementById('jobSkills').value.split(',').map(s=>s.trim()).filter(Boolean),
+          description: document.getElementById('jobDescription').value.trim(),
+          status: 'open'
+        };
+        try{
+          const created = await createJob(token, payload);
+          if(created && created._id){
+            jobs.unshift(created);
+            appsByJob[created._id] = [];
+            setOverview(jobs, appsByJob);
+            renderJobs(jobs, appsByJob);
+            e.target.reset();
+            msg.textContent = 'Posted.';
+          }else{
+            msg.textContent = 'Posted (response recorded).';
+          }
+        }catch{
+          msg.textContent = 'Failed to post.';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
