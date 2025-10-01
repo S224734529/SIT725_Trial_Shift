@@ -84,8 +84,8 @@ exports.login = async (req, res) => {
     }
 
     const token = generateToken(user);
-
-    res.status(200).json({
+    res.cookie("token", token, { httpOnly: true });
+    res.json({
       token,
       user: {
         id: user._id,
