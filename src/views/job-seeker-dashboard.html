@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Job Seeker Dashboard</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/styles.css"/>
+  <style>
+    /* light defaults if styles.css lacks these */
+    .muted{color:#666}
+    .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .card{background:#fff;border:1px solid #e6e6e6;border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+    .card h3{margin:0 0 8px;font-size:14px;color:#666;font-weight:600}
+    .num{font-size:26px;font-weight:700}
+    .section{margin:24px 0}
+    .section h2{margin:0 0 12px;font-size:18px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#f2f2f2;font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+    .job{border:1px solid #eee;border-radius:12px;padding:14px}
+    .job h4{margin:0 0 6px}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{padding:6px 10px;border-radius:8px;border:1px solid #ddd;background:#fafafa;cursor:pointer}
+    .btn.primary{border-color:#b7e4c7;background:#e9f7ef}
+    .btn.ghost{background:#fff}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:10px 12px;border-bottom:1px solid #eee;text-align:left}
+    .progress{height:8px;background:#f1f1f1;border-radius:999px;overflow:hidden}
+    .progress > span{display:block;height:8px;background:#4caf50}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+    input[type="search"],select{padding:8px 10px;border:1px solid #ddd;border-radius:8px;min-width:200px}
+    .banner{background:#fff3cd;border:1px solid #ffe69c;border-radius:12px;padding:10px 12px;margin:12px 0}
+  </style>
+</head>
+<body>
+  <!-- Sidebar (unchanged) -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-right">
+      <i class="material-icons profile-icon" id="profileBtn">account_circle</i>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main-content">
+    <h4 class="welcome">Welcome</h4>
+    <p id="welcomeMessage" class="muted"></p>
+    <div id="pendingNote" class="banner" style="display:none;">Your profile update is awaiting admin approval.</div>
+
+    <!-- At-a-glance -->
+    <section class="section">
+      <h2>Overview</h2>
+      <div class="cards">
+        <div class="card"><h3>Profile completeness</h3>
+          <div class="progress" aria-label="Profile completeness"><span id="profileBar" style="width:0%"></span></div>
+          <div class="num" id="profilePct">0%</div>
+        </div>
+        <div class="card"><h3>Saved jobs</h3><div class="num" id="savedCount">—</div></div>
+        <div class="card"><h3>Applications</h3><div class="num" id="appsCount">—</div></div>
+        <div class="card"><h3>New matches</h3><div class="num" id="matchCount">—</div></div>
+      </div>
+    </section>
+
+    <!-- Job preferences -->
+    <section class="section">
+      <h2>Your Preferences</h2>
+      <div id="prefsWrap" class="card">
+        <div class="row" id="prefsRow"><span class="muted">Loading…</span></div>
+        <div style="margin-top:10px">
+          <a class="btn ghost" href="/job-preferences">Edit preferences</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recommended jobs -->
+    <section class="section">
+      <h2>Recommended Jobs</h2>
+      <div class="toolbar">
+        <input type="search" id="jobSearch" placeholder="Search by title or company"/>
+        <select id="categoryFilter"><option value="">All categories</option></select>
+        <select id="stateFilter"><option value="">All states</option></select>
+      </div>
+      <div id="jobsGrid" class="grid"></div>
+      <p id="jobsEmpty" class="muted" style="display:none">No matching jobs found.</p>
+    </section>
+
+    <!-- Applications -->
+    <section class="section">
+      <h2>Your Applications</h2>
+      <table class="table">
+        <thead><tr><th>Job</th><th>Company</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody id="appsBody"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </section>
+
+    <!-- Saved jobs -->
+    <section class="section">
+      <h2>Saved Jobs</h2>
+      <div id="savedGrid" class="grid"></div>
+      <p id="savedEmpty" class="muted" style="display:none">You have not saved any jobs yet.</p>
+    </section>
+
+    <!-- Learning suggestions -->
+    <section class="section">
+      <h2>Suggested Courses</h2>
+      <div id="coursesGrid" class="grid"></div>
+      <p id="coursesEmpty" class="muted" style="display:none">No course suggestions right now.</p>
+    </section>
+  </main>
+
+  <!-- Sidebar component -->
+  <script src="/components/sidebar.js"></script>
+  <script>
+    // Parse JWT from localStorage
+    function parseJwt(token){
+      try{
+        const b = token.split('.')[1]; if(!b) return null;
+        const p = decodeURIComponent(atob(b).split('').map(c=>'%' + ('00'+c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+        return JSON.parse(p);
+      }catch{return null;}
+    }
+
+    // API endpoints with safe fallbacks (adjust if your routes differ)
+    const API = {
+      me: '/api/users/me',
+      prefsMe: '/api/job-preferences/me',
+      prefsByUser: id => `/api/job-preferences?user=${id}`,
+      jobs: '/api/jobs',
+      apply: id => `/api/jobs/${id}/apply`,
+      save: id => `/api/jobs/${id}/save`,
+      saved: '/api/jobs/saved',
+      applications: '/api/jobs/applications/me',
+      courses: '/api/courses?limit=50'
+    };
+
+    const authHeaders = t => ({ 'Content-Type':'application/json', 'Authorization':`Bearer ${t}` });
+
+    async function safeGet(url, t){
+      try{
+        const r = await fetch(url,{headers:authHeaders(t)});
+        if(!r.ok) throw new Error(r.statusText);
+        return r.json();
+      }catch{ return null; }
+    }
+
+    // Local fallback for saved jobs when API route is missing
+    const localSavesKey = 'savedJobs:fallback';
+    function readLocalSaves(){
+      try{ return JSON.parse(localStorage.getItem(localSavesKey) || '[]'); }catch{ return []; }
+    }
+    function writeLocalSaves(arr){ localStorage.setItem(localSavesKey, JSON.stringify(arr)); }
+
+    function pctProfile(user){
+      const fields = ['name','email','state','profilePicture'];
+      const have = fields.filter(f => !!user?.[f]).length;
+      return Math.round((have/fields.length)*100);
+    }
+
+    function setOverview({profilePct,saved,apps,matches}){
+      document.getElementById('profilePct').textContent = profilePct + '%';
+      document.getElementById('profileBar').style.width = profilePct + '%';
+      document.getElementById('savedCount').textContent = saved;
+      document.getElementById('appsCount').textContent = apps;
+      document.getElementById('matchCount').textContent = matches;
+    }
+
+    function renderPrefs(prefs){
+      const wrap = document.getElementById('prefsRow');
+      wrap.innerHTML = '';
+      if(!prefs){ wrap.innerHTML = '<span class="muted">No preferences set.</span>'; return; }
+      const chips = [];
+      if(prefs.state) chips.push(['State', prefs.state]);
+      if(prefs.category) chips.push(['Category', prefs.category]);
+      if(Array.isArray(prefs.skills) && prefs.skills.length) chips.push(['Skills', prefs.skills.join(', ')]);
+      if(!chips.length){ wrap.innerHTML = '<span class="muted">No preferences set.</span>'; return; }
+      for(const [k,v] of chips){
+        const span = document.createElement('span');
+        span.className='pill';
+        span.textContent=`${k}: ${v}`;
+        wrap.appendChild(span);
+      }
+    }
+
+    function cardJob(j){
+      const el = document.createElement('div'); el.className='job';
+      const meta = [
+        j.company || 'Company',
+        j.category || 'Category',
+        j.state || j.location || 'Location',
+        j.salary ? ('$' + j.salary) : null
+      ].filter(Boolean).map(x=>`<span class="pill">${x}</span>`).join(' ');
+      el.innerHTML = `
+        <h4>${j.title || 'Untitled job'}</h4>
+        <div class="row" style="margin:6px 0 10px">${meta}</div>
+        <div class="row">
+          <button class="btn primary" data-apply="${j._id}">Apply</button>
+          <button class="btn" data-save="${j._id}">Save</button>
+        </div>`;
+      return el;
+    }
+
+    function fillSelect(el, values){
+      const uniq = [...new Set(values.filter(Boolean))].sort();
+      for(const v of uniq){
+        const opt = document.createElement('option'); opt.value=v; opt.textContent=v;
+        el.appendChild(opt);
+      }
+    }
+
+    function filterJobs(all, q, cat, st){
+      const ql = (q||'').trim().toLowerCase();
+      return all.filter(j=>{
+        const inQ = !ql || (j.title||'').toLowerCase().includes(ql) || (j.company||'').toLowerCase().includes(ql);
+        const inC = !cat || (j.category===cat);
+        const inS = !st || (j.state===st || j.location===st);
+        return inQ && inC && inS;
+      });
+    }
+
+    function renderJobs(list){
+      const grid = document.getElementById('jobsGrid');
+      const empty = document.getElementById('jobsEmpty');
+      grid.innerHTML='';
+      if(!list.length){ empty.style.display=''; return; }
+      empty.style.display='none';
+      for(const j of list){ grid.appendChild(cardJob(j)); }
+    }
+
+    function renderSaved(list){
+      const grid = document.getElementById('savedGrid');
+      const empty = document.getElementById('savedEmpty');
+      grid.innerHTML='';
+      if(!list.length){ empty.style.display=''; return; }
+      empty.style.display='none';
+      for(const j of list){
+        const c = cardJob(j);
+        // change buttons: remove Save, add Remove
+        const saveBtn = c.querySelector('[data-save]');
+        if(saveBtn){ saveBtn.outerHTML = `<button class="btn" data-unsave="${j._id}">Remove</button>`; }
+        grid.appendChild(c);
+      }
+    }
+
+    function renderApps(rows){
+      const tb = document.getElementById('appsBody'); tb.innerHTML='';
+      if(!rows.length){ tb.innerHTML = '<tr><td colspan="4" class="muted">No applications yet.</td></tr>'; return; }
+      for(const r of rows){
+        const tr = document.createElement('tr');
+        const when = r.createdAt ? new Date(r.createdAt).toLocaleDateString() : '—';
+        tr.innerHTML = `<td>${r.job?.title || r.title || '—'}</td>
+                        <td>${r.job?.company || r.company || '—'}</td>
+                        <td>${when}</td>
+                        <td><span class="pill">${r.status || 'submitted'}</span></td>`;
+        tb.appendChild(tr);
+      }
+    }
+
+    function attachJobActions(token, allJobs){
+      document.addEventListener('click', async (e)=>{
+        const applyId = e.target?.getAttribute?.('data-apply');
+        const saveId = e.target?.getAttribute?.('data-save');
+        const unsaveId = e.target?.getAttribute?.('data-unsave');
+
+        // Apply
+        if(applyId){
+          e.target.disabled=true;
+          try{
+            const res = await fetch(API.apply(applyId), {method:'POST', headers:authHeaders(token)});
+            if(res.ok){ e.target.textContent='Applied'; }
+          }catch{} finally{ e.target.disabled=false; }
+        }
+
+        // Save
+        if(saveId){
+          // try API
+          let ok = false;
+          try{
+            const r = await fetch(API.save(saveId), {method:'POST', headers:authHeaders(token)});
+            ok = r.ok;
+          }catch{}
+          if(!ok){
+            // fallback to local
+            const ids = new Set(readLocalSaves()); ids.add(saveId); writeLocalSaves([...ids]);
+          }
+          const job = allJobs.find(j=>j._id===saveId);
+          const current = JSON.parse(document.body.dataset.saved || '[]');
+          if(job){ current.push(job); document.body.dataset.saved = JSON.stringify(current); renderSaved(current); }
+        }
+
+        // Unsave
+        if(unsaveId){
+          let ok=false;
+          try{
+            const r = await fetch(API.save(unsaveId), {method:'DELETE', headers:authHeaders(token)});
+            ok = r.ok;
+          }catch{}
+          if(!ok){
+            const ids = new Set(readLocalSaves()); ids.delete(unsaveId); writeLocalSaves([...ids]);
+          }
+          const current = JSON.parse(document.body.dataset.saved || '[]').filter(j=>j._id!==unsaveId);
+          document.body.dataset.saved = JSON.stringify(current);
+          renderSaved(current);
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      if(typeof loadSidebar === 'function') loadSidebar();
+
+      const token = localStorage.getItem('token');
+      if(!token){ window.location.href='/'; return; }
+      const user = parseJwt(token);
+      if(!user){ localStorage.removeItem('token'); window.location.href='/'; return; }
+
+      // If admin landed here by mistake, send to admin dashboard
+      if((user.role||'').toLowerCase()==='admin'){ window.location.href='/dashboard.html'; return; }
+
+      document.getElementById('welcomeMessage').textContent =
+        `Hello, ${user.name || user.username || 'Job Seeker'} (${user.role || 'user'})`;
+
+      document.getElementById('profileBtn').addEventListener('click',()=>window.location.href='/profile.html');
+      document.getElementById('logoutBtn').addEventListener('click',()=>{
+        localStorage.removeItem('token'); localStorage.removeItem('user'); window.location.href='/';
+      });
+
+      // Load profile for completeness and pending flag
+      const me = await safeGet(API.me, token);
+      if(me?.pendingApproval || me?.pendingApproval === true){
+        document.getElementById('pendingNote').style.display='';
+      }
+      const profilePct = pctProfile(me || user);
+
+      // Preferences
+      let prefs = await safeGet(API.prefsMe, token);
+      if(!prefs && (user.id || user._id)) prefs = await safeGet(API.prefsByUser(user.id || user._id), token);
+      const prefsObj = Array.isArray(prefs) ? prefs[0] : prefs;
+      renderPrefs(prefsObj || null);
+
+      // Jobs
+      const jobsResp = await safeGet(API.jobs, token) || [];
+      const allJobs = Array.isArray(jobsResp) ? jobsResp : (jobsResp.data || []);
+      // simple matching using state/category/skills
+      const matches = allJobs.filter(j=>{
+        if(!prefsObj) return true;
+        const okState = !prefsObj.state || prefsObj.state === j.state || prefsObj.state === j.location;
+        const okCat = !prefsObj.category || prefsObj.category === j.category;
+        const okSkill = !prefsObj.skills || !prefsObj.skills.length ||
+                        (Array.isArray(j.skills) && j.skills.some(s=>prefsObj.skills.includes(s)));
+        return okState && okCat && okSkill;
+      });
+
+      // Fill filters
+      fillSelect(document.getElementById('categoryFilter'), allJobs.map(j=>j.category));
+      fillSelect(document.getElementById('stateFilter'), allJobs.map(j=>j.state || j.location));
+
+      // Initial render
+      renderJobs(matches.slice(0, 20));
+
+      // Saved jobs: API first, then local fallback
+      let savedList = await safeGet(API.saved, token);
+      if(!Array.isArray(savedList)){
+        const ids = new Set(readLocalSaves());
+        savedList = allJobs.filter(j=>ids.has(j._id));
+      }
+      document.body.dataset.saved = JSON.stringify(savedList || []);
+      renderSaved(savedList || []);
+
+      // Applications
+      const appsResp = await safeGet(API.applications, token) || [];
+      const apps = Array.isArray(appsResp) ? appsResp : (appsResp.data || []);
+      renderApps(apps);
+
+      // Overview counts
+      setOverview({
+        profilePct,
+        saved: (savedList||[]).length,
+        apps: apps.length,
+        matches: matches.length
+      });
+
+      // Search and filter
+      const searchEl = document.getElementById('jobSearch');
+      const catEl = document.getElementById('categoryFilter');
+      const stateEl = document.getElementById('stateFilter');
+      function updateList(){
+        const filtered = filterJobs(matches, searchEl.value, catEl.value, stateEl.value);
+        renderJobs(filtered.slice(0, 40));
+      }
+      searchEl.addEventListener('input', updateList);
+      catEl.addEventListener('change', updateList);
+      stateEl.addEventListener('change', updateList);
+
+      // Course suggestions
+      const coursesResp = await safeGet(API.courses, token) || [];
+      const courses = Array.isArray(coursesResp) ? coursesResp : (coursesResp.data || []);
+      const interest = prefsObj?.category || (matches[0]?.category);
+      const suggested = interest ? courses.filter(c=>c.category===interest) : courses.slice(0,6);
+      const cg = document.getElementById('coursesGrid');
+      if(!suggested.length){ document.getElementById('coursesEmpty').style.display=''; }
+      else{
+        for(const c of suggested.slice(0,8)){
+          const el = document.createElement('div'); el.className='card';
+          el.innerHTML = `<h3>${c.title || 'Course'}</h3>
+                          <p class="muted">${c.category || ''}</p>
+                          <a class="btn ghost" href="/courses">View</a>`;
+          cg.appendChild(el);
+        }
+      }
+
+      // Actions (apply/save)
+      attachJobActions(token, allJobs);
+    });
+  </script>
+</body>
+</html>

@@ -25,6 +25,25 @@
   const managePager = qs("#manage-pagination");
   const coursesError = qs("#courses-error");
   const coursesEmpty = qs("#courses-empty");
+  const addAssetList = qs("#addAssetList");
+  const addAssetTitle = qs("#addAssetTitle");
+  const addAssetFile = qs("#addAssetFile");
+  const btnAddAttachment = qs("#btnAddAttachment");
+  const addAssetError = qs("#addAssetError");
+  const addAssetSuccess = qs("#addAssetSuccess");
+  const addAssetLoading = qs("#addAssetLoading");
+  const editAssetLoading = qs("#editAssetLoading");
+  const addAssetLoadingMessage = addAssetLoading ? addAssetLoading.querySelector(".asset-upload__message") : null;
+  const editAssetLoadingMessage = editAssetLoading ? editAssetLoading.querySelector(".asset-upload__message") : null;
+  const defaultAddLoadingMessage = addAssetLoadingMessage ? addAssetLoadingMessage.textContent.trim() : "Uploading attachments...";
+  const defaultEditLoadingMessage = editAssetLoadingMessage ? editAssetLoadingMessage.textContent.trim() : "Uploading attachment...";
+  const editAssetList = qs("#editAssetList");
+  const editAssetTitle = qs("#editAssetTitle");
+  const editAssetFile = qs("#editAssetFile");
+  const btnUploadAsset = qs("#btnUploadAsset");
+  const editAssetError = qs("#editAssetError");
+  const editAssetSuccess = qs("#editAssetSuccess");
+  const detailsAttachments = qs("#detailsAttachments");
 
   const bulkActions = qs("#bulk-actions");
   const selectedCount = qs("#selected-count");
@@ -42,6 +61,8 @@
     role: "",
     selectedCourses: [],
   };
+  let currentEditModule = null;
+  let pendingAddAttachments = [];
 
   // Auth header
   function authHeader(){
@@ -192,6 +213,123 @@
     }
   }
 
+  
+  // Attachment staging (create)
+  function clearAddAttachmentFeedback(){
+    if (addAssetError) addAssetError.style.display = 'none';
+    if (addAssetSuccess) addAssetSuccess.style.display = 'none';
+    setAddUploading(false);
+  }
+
+  function setAddUploading(isLoading, message){
+    if (!addAssetLoading) return;
+    const nextMessage = typeof message === "string" && message.length ? message : defaultAddLoadingMessage;
+    if (addAssetLoadingMessage) addAssetLoadingMessage.textContent = nextMessage;
+    addAssetLoading.style.display = isLoading ? "inline-flex" : "none";
+    [btnSaveAdd, btnCancelAdd, btnAddAttachment, addAssetFile, addAssetTitle].forEach((control) => {
+      if (control) control.disabled = !!isLoading;
+    });
+  }
+
+  function resetAddForm(){
+    if (addTitle) addTitle.value = "";
+    if (addCategory) addCategory.value = "";
+    if (addRole) addRole.value = "";
+    if (addCourseContent) addCourseContent.value = "";
+    if (addQuizReq) addQuizReq.checked = false;
+    if (addError) addError.style.display = "none";
+    if (addSuccess) addSuccess.style.display = "none";
+    resetAddAttachmentState();
+  }
+
+  function renderAddAttachments(){
+    if (!addAssetList) return;
+    if (!pendingAddAttachments.length){
+      addAssetList.innerHTML = '<div class="help-muted">No attachments staged.</div>';
+      return;
+    }
+    addAssetList.innerHTML = pendingAddAttachments.map(item => {
+      const title = escapeHtml(item.title || (item.file ? item.file.name : 'Attachment'));
+      const type = item.file && item.file.type === 'application/pdf' ? 'PDF' : 'Image';
+      return `<div class="asset-item" data-staged-id="${item.id}">
+        <div>
+          <div class="asset-name">${title}</div>
+          <div class="help-muted">${type}</div>
+        </div>
+        <div class="asset-actions">
+          <button type="button" class="btn-soft js-remove-staged">Remove</button>
+        </div>
+      </div>`;
+    }).join('');
+    addAssetList.querySelectorAll('.js-remove-staged').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const host = btn.closest('.asset-item');
+        if (!host) return;
+        const id = host.dataset.stagedId;
+        pendingAddAttachments = pendingAddAttachments.filter(entry => entry.id !== id);
+        renderAddAttachments();
+      });
+    });
+  }
+
+  function stageAddAttachment(){
+    clearAddAttachmentFeedback();
+    const file = addAssetFile && addAssetFile.files ? addAssetFile.files[0] : null;
+    const title = addAssetTitle ? addAssetTitle.value.trim() : '';
+    if (!file){
+      if (addAssetError) {
+        addAssetError.textContent = 'Select a file to attach.';
+        addAssetError.style.display = 'block';
+      }
+      return;
+    }
+    const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
+    if (!isValid){
+      if (addAssetError) {
+        addAssetError.textContent = 'Only image or PDF files are supported.';
+        addAssetError.style.display = 'block';
+      }
+      return;
+    }
+    pendingAddAttachments.push({
+      id: `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      title,
+    });
+    if (addAssetTitle) addAssetTitle.value = '';
+    if (addAssetFile) addAssetFile.value = '';
+    renderAddAttachments();
+    if (addAssetSuccess) {
+      addAssetSuccess.textContent = 'Attachment staged.';
+      addAssetSuccess.style.display = 'block';
+    }
+  }
+
+  function resetAddAttachmentState(){
+    pendingAddAttachments = [];
+    renderAddAttachments();
+    clearAddAttachmentFeedback();
+    if (addAssetFile) addAssetFile.value = '';
+    if (addAssetTitle) addAssetTitle.value = '';
+  }
+  async function uploadFileAttachment(moduleId, file, title){
+    if (!moduleId || !file) {
+      throw new Error('Missing attachment data');
+    }
+    const headers = authHeader();
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+    const res = await fetch(`${API}/modules/${moduleId}/assets`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      throw new Error('Upload failed');
+    }
+    return res.json();
+  }
   // Bulk delete
   async function onBulkDelete() {
     if (state.selectedCourses.length === 0) {
@@ -219,16 +357,21 @@
   }
 
 
-  // Save add
+  // Save add - FIXED: Now saves course content properly
   async function onSave(){
-    addError.style.display = "none"; addSuccess.style.display = "none";
-    const title = addTitle.value.trim();
-    const category = addCategory.value.trim();
-    const role = addRole.value.trim();
-    const content = addCourseContent.value.trim();
+    if (addError) addError.style.display = "none";
+    if (addSuccess) addSuccess.style.display = "none";
+    clearAddAttachmentFeedback();
+    const title = addTitle ? addTitle.value.trim() : "";
+    const category = addCategory ? addCategory.value.trim() : "";
+    const role = addRole ? addRole.value.trim() : "";
+    const content = addCourseContent ? addCourseContent.value.trim() : "";
     if(!title || !category){
-      addError.textContent = "Title and Category are required.";
-      addError.style.display = "block"; return;
+      if (addError) {
+        addError.textContent = "Title and Category are required.";
+        addError.style.display = "block";
+      }
+      return;
     }
     const res = await fetch(`${API}/modules`, {
       method:"POST",
@@ -237,29 +380,67 @@
     });
     if(!res.ok){
       const t = await res.text().catch(()=> "");
-      addError.textContent = `Create failed. ${t}`;
-      addError.style.display = "block"; return;
+      if (addError) {
+        addError.textContent = `Create failed. ${t}`;
+        addError.style.display = "block";
+      }
+      return;
     }
     const mod = await res.json();
     const id = mod.id || mod._id;
+    
+    // FIXED: Save course content as text asset
     if(content){
-      const res2 = await fetch(`${API}/modules/${id}/assets`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json", ...authHeader() },
-        body: JSON.stringify({ type:"text", title:"Overview", text: content })
-      });
-      if(!res2.ok){
-        console.warn("Text asset creation failed");
+      try {
+        const res2 = await fetch(`${API}/modules/${id}/assets`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json", ...authHeader() },
+          body: JSON.stringify({ type:"text", title:'Course Content', text: content })
+        });
+        if(!res2.ok){
+          console.warn("Text asset creation failed", await res2.text());
+        }
+      } catch (err) {
+        console.error("Error saving course content:", err);
       }
     }
-    addSuccess.style.display = "inline-block";
-    addTitle.value = "";
-    addCourseContent.value = "";
-    addQuizReq.checked = false;
+
+    const stagedCount = pendingAddAttachments.length;
+    if (stagedCount){
+      let uploadFailures = 0;
+      try {
+        setAddUploading(true, stagedCount > 1 ? `Uploading ${stagedCount} attachments...` : defaultAddLoadingMessage);
+        for (let index = 0; index < stagedCount; index++){
+          const attachment = pendingAddAttachments[index];
+          if (!attachment || !attachment.file) continue;
+          const progressMessage = stagedCount > 1 ? `Uploading attachment ${index + 1} of ${stagedCount}...` : defaultAddLoadingMessage;
+          setAddUploading(true, progressMessage);
+          const titleForUpload = attachment.title || (attachment.file ? attachment.file.name : "Attachment");
+          try {
+            await uploadFileAttachment(id, attachment.file, titleForUpload);
+          } catch (err) {
+            uploadFailures++;
+            console.error('Attachment upload failed', err);
+          }
+        }
+      } finally {
+        setAddUploading(false);
+      }
+      if (uploadFailures) {
+        console.warn(`Failed to upload ${uploadFailures} attachment${uploadFailures === 1 ? '' : 's'}.`);
+      }
+    }
+
+    if (addSuccess) addSuccess.style.display = "inline-block";
+    if (addTitle) addTitle.value = "";
+    if (addCategory) addCategory.value = "";
+    if (addRole) addRole.value = "";
+    if (addCourseContent) addCourseContent.value = "";
+    if (addQuizReq) addQuizReq.checked = false;
+    resetAddAttachmentState();
     await loadAll();
     setView("manage");
   }
-
   // Archive toggle
   async function onArchive(id){
     const course = state.all.find(c => String(c.id) === String(id));
@@ -311,14 +492,145 @@
 
   // Load edit
   async function onEdit(id){
-    const res = await fetch(`${API}/modules/${id}`, { headers: { ...authHeader() } });
-    if(!res.ok){ alert("Failed to fetch course"); return; }
-    const m = await res.json();
-    setView("edit", m);
+    try {
+      const res = await fetch(`${API}/modules/${id}`, { headers: { ...authHeader() } });
+      if(!res.ok) throw new Error('Failed to fetch course');
+      const m = await res.json();
+      currentEditModule = m;
+      setView("edit", currentEditModule);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to fetch course");
+    }
   }
 
-  // Render edit
+  function clearAssetFeedback(){
+    if (editAssetError) editAssetError.style.display = 'none';
+    if (editAssetSuccess) editAssetSuccess.style.display = 'none';
+    setEditUploading(false);
+  }
+
+  function setEditUploading(isLoading, message){
+    if (!editAssetLoading) return;
+    const nextMessage = typeof message === "string" && message.length ? message : defaultEditLoadingMessage;
+    if (editAssetLoadingMessage) editAssetLoadingMessage.textContent = nextMessage;
+    editAssetLoading.style.display = isLoading ? "inline-flex" : "none";
+    [btnUploadAsset, editAssetFile, editAssetTitle].forEach((control) => {
+      if (control) control.disabled = !!isLoading;
+    });
+  }
+
+  function reportAssetError(message){
+    if (!editAssetError) return;
+    editAssetError.textContent = message;
+    editAssetError.style.display = 'block';
+    if (editAssetSuccess) editAssetSuccess.style.display = 'none';
+  }
+
+  function reportAssetSuccess(message){
+    if (!editAssetSuccess) return;
+    editAssetSuccess.textContent = message;
+    editAssetSuccess.style.display = 'block';
+    if (editAssetError) editAssetError.style.display = 'none';
+  }
+
+  function getModuleId(mod){
+    return mod ? (mod._id || mod.id) : null;
+  }
+
+  function renderEditAttachments(){
+    if (!editAssetList) return;
+    if (!currentEditModule){
+      editAssetList.innerHTML = '<div class="help-muted">No attachments yet.</div>';
+      return;
+    }
+    const attachments = (currentEditModule.assets || []).filter(asset => asset.type === 'image' || asset.type === 'pdf');
+    if (!attachments.length){
+      editAssetList.innerHTML = '<div class="help-muted">No attachments yet.</div>';
+      return;
+    }
+    editAssetList.innerHTML = attachments.map(asset => {
+      const assetId = getModuleId(asset) || asset.assetId || '';
+      const title = escapeHtml(asset.title || (asset.type === 'pdf' ? 'PDF document' : 'Image'));
+      const url = escapeHtml(asset.url || '#');
+      const typeLabel = asset.type === 'pdf' ? 'PDF' : 'Image';
+      return `<div class="asset-item" data-asset-id="${assetId}">
+        <div>
+          <div class="asset-name">${title}</div>
+          <div class="help-muted">${typeLabel}</div>
+        </div>
+        <div class="asset-actions">
+          <a href="${url}" target="_blank" rel="noopener" class="chip-btn">Open</a>
+          <a href="${url}" download class="chip-btn">Download</a>
+          <button type="button" class="btn-soft js-remove-asset">Remove</button>
+        </div>
+      </div>`;
+    }).join('');
+    editAssetList.querySelectorAll('.js-remove-asset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const host = btn.closest('.asset-item');
+        if (!host) return;
+        onDeleteAsset(host.dataset.assetId);
+      });
+    });
+  }
+
+  async function onUploadAsset(moduleId){
+    if (!moduleId || !btnUploadAsset) return;
+    const file = editAssetFile && editAssetFile.files ? editAssetFile.files[0] : null;
+    const customTitle = editAssetTitle ? editAssetTitle.value.trim() : '';
+    clearAssetFeedback();
+    if (!file){
+      reportAssetError('Select a file to upload.');
+      return;
+    }
+    const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
+    if (!isValid){
+      reportAssetError('Only image and PDF uploads are allowed.');
+      return;
+    }
+    try {
+      setEditUploading(true);
+      const data = await uploadFileAttachment(moduleId, file, customTitle);
+      if (data && data.asset){
+        const assets = Array.isArray(currentEditModule.assets) ? currentEditModule.assets : [];
+        assets.push(data.asset);
+        currentEditModule.assets = assets;
+      }
+      if (editAssetTitle) editAssetTitle.value = '';
+      if (editAssetFile) editAssetFile.value = '';
+      renderEditAttachments();
+      reportAssetSuccess('Attachment uploaded.');
+    } catch (err) {
+      console.error(err);
+      reportAssetError('Failed to upload attachment.');
+    } finally {
+      setEditUploading(false);
+    }
+  }
+  async function onDeleteAsset(assetId){
+    if (!assetId || !currentEditModule) return;
+    if (!confirm('Remove this attachment?')) return;
+    clearAssetFeedback();
+    const moduleId = getModuleId(currentEditModule);
+    try {
+      const res = await fetch(`${API}/modules/${moduleId}/assets/${assetId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (!res.ok) throw new Error('Delete failed');
+      currentEditModule.assets = (currentEditModule.assets || []).filter(asset => String(getModuleId(asset)) !== String(assetId));
+      renderEditAttachments();
+      reportAssetSuccess('Attachment removed.');
+    } catch (err) {
+      console.error(err);
+      reportAssetError('Failed to remove attachment.');
+    }
+  }
+
+  // Render edit - FIXED: Now properly loads course content
   function renderEditView(m){
+    currentEditModule = m;
     const vEdit = qs("#courses-edit");
     if(!vEdit) return;
     vEdit.style.display = "grid";
@@ -327,47 +639,118 @@
     const elOk = qs("#editSuccess");
     if (elErr) elErr.style.display = 'none';
     if (elOk) elOk.style.display = 'none';
-    qs("#editTitle").value = m.title || "";
-    qs("#editCategory").value = m.category || "";
-    qs("#editRole").value = m.role || "";
-    const textAssetList = (m.assets||[]).filter(a=>a.type==='text');
-    const latestText = textAssetList.length ? textAssetList[textAssetList.length-1] : null;
-    qs("#editCourseContent").value = latestText ? (latestText.text||"") : "";
-    qs("#btnSaveEdit").onclick = async function(){
-      const title = qs("#editTitle").value.trim();
-      const category = qs("#editCategory").value.trim();
-      const role = qs("#editRole").value.trim();
-      const content = qs("#editCourseContent").value.trim();
-      if(!title || !category){
-        qs("#editError").textContent = 'Title and Category are required.';
-        qs("#editError").style.display = 'block'; return;
-      }
-      const res = await fetch(`${API}/modules/${m._id||m.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type':'application/json', ...authHeader() },
-        body: JSON.stringify({ title, category, role })
-      });
-      if(!res.ok){
-        qs("#editError").textContent = 'Update failed.';
-        qs("#editError").style.display = 'block'; return;
-      }
-      if (content) {
+    clearAssetFeedback();
+
+    const moduleId = getModuleId(m);
+    const hiddenId = qs("#editId");
+    if (hiddenId) hiddenId.value = moduleId || '';
+
+    const titleInput = qs("#editTitle");
+    const categorySelect = qs("#editCategory");
+    const roleSelect = qs("#editRole");
+    const contentArea = qs("#editCourseContent");
+
+    if (titleInput) titleInput.value = m.title || '';
+    if (categorySelect) categorySelect.value = m.category || '';
+    if (roleSelect) roleSelect.value = m.role || '';
+
+    // FIXED: Properly load course content from text assets
+    const textAssets = (m.assets||[]).filter(a=>a.type==='text');
+    let courseContent = '';
+    if (textAssets.length > 0) {
+      // Get the latest text asset content
+      const latestTextAsset = textAssets[textAssets.length - 1];
+      courseContent = latestTextAsset.text || '';
+    }
+    if (contentArea) contentArea.value = courseContent;
+
+    renderEditAttachments();
+
+    if (btnUploadAsset) {
+      btnUploadAsset.onclick = function(){ onUploadAsset(moduleId); };
+    }
+
+    const saveBtn = qs("#btnSaveEdit");
+    if (saveBtn) {
+      saveBtn.onclick = async function(){
+        const title = titleInput ? titleInput.value.trim() : '';
+        const category = categorySelect ? categorySelect.value.trim() : '';
+        const role = roleSelect ? roleSelect.value.trim() : '';
+        const content = contentArea ? contentArea.value.trim() : '';
+        if(!title || !category){
+          if (elErr) {
+            elErr.textContent = 'Title and Category are required.';
+            elErr.style.display = 'block';
+          }
+          return;
+        }
         try {
-          await fetch(`${API}/modules/${m._id||m.id}/assets`, {
-            method: 'POST',
+          const res = await fetch(`${API}/modules/${moduleId}`, {
+            method: 'PATCH',
             headers: { 'Content-Type':'application/json', ...authHeader() },
-            body: JSON.stringify({ type:'text', title:'Overview', text: content })
+            body: JSON.stringify({ title, category, role })
           });
-        } catch {}
-      }
-      qs("#editSuccess").style.display = 'inline-block';
-      await loadAll();
-      setView("manage");
-    };
-    qs("#btnCancelEdit").onclick = function(){ setView("manage"); };
+          if(!res.ok) throw new Error('Update failed');
+          
+          // FIXED: Update course content as text asset
+          const existingTextAssets = (currentEditModule.assets || []).filter(a => a.type === 'text');
+          for (const asset of existingTextAssets) {
+            const assetId = getModuleId(asset);
+            if (!assetId) continue;
+            try {
+              await fetch(`${API}/modules/${moduleId}/assets/${assetId}`, {
+                method: 'DELETE',
+                headers: { ...authHeader() }
+              });
+            } catch (cleanupErr) {
+              console.error('Text asset cleanup failed', cleanupErr);
+            }
+          }
+          currentEditModule.assets = (currentEditModule.assets || []).filter(a => a.type !== 'text');
+          
+          if (content) {
+            try {
+              const textRes = await fetch(`${API}/modules/${moduleId}/assets`, {
+                method: 'POST',
+                headers: { 'Content-Type':'application/json', ...authHeader() },
+                body: JSON.stringify({ type:'text', title:'Course Content', text: content })
+              });
+              if (textRes.ok) {
+                const payload = await textRes.json().catch(() => null);
+                if (payload && payload.asset) {
+                  currentEditModule.assets.push(payload.asset);
+                }
+              } else {
+                console.warn('Text asset creation failed');
+              }
+            } catch (textErr) {
+              console.error('Text asset save failed', textErr);
+            }
+          }
+          if (elOk) elOk.style.display = 'inline-block';
+          await loadAll();
+          currentEditModule = null;
+          setView("manage");
+        } catch (err) {
+          console.error(err);
+          if (elErr) {
+            elErr.textContent = 'Update failed.';
+            elErr.style.display = 'block';
+          }
+        }
+      };
+    }
+
+    const cancelBtn = qs("#btnCancelEdit");
+    if (cancelBtn) {
+      cancelBtn.onclick = function(){
+        currentEditModule = null;
+        setView("manage");
+      };
+    }
   }
 
-  // Render details
+  // Render details - FIXED: Now properly displays course content
   async function renderDetailsView(id){
     const vDetails = qs("#course-details");
     if (!vDetails) return;
@@ -381,48 +764,83 @@
       const m = await res.json();
 
       const elTitle = qs("#detailsTitle");
-      const elMeta = qs("#detailsMeta");
+      const elCategory = qs("#detailsCategory");
+      const elRole = qs("#detailsRole");
+      const elCreated = qs("#detailsCreated");
       const elContent = qs("#detailsContent");
+      if (elContent) elContent.innerHTML = '';
+      if (detailsAttachments) detailsAttachments.innerHTML = '';
 
       if (elTitle) elTitle.textContent = m.title || '';
 
-      if (elMeta) {
-        const parts = [];
-        if (m.category) parts.push(`Category: ${m.category}`);
-        if (m.role) parts.push(`Role: ${m.role}`);
-        if (m.createdAt) parts.push(`Created: ${new Date(m.createdAt).toLocaleString()}`);
-        elMeta.textContent = parts.join(' • ');
+      // Set individual metadata fields
+      if (elCategory) elCategory.textContent = m.category || 'N/A';
+      if (elRole) elRole.textContent = m.role || 'N/A';
+      if (elCreated) {
+        const createdDate = m.createdAt ? new Date(m.createdAt).toLocaleString() : 'N/A';
+        elCreated.textContent = createdDate;
       }
 
+      // FIXED: Properly display course content from text assets
       if (elContent) {
         let html = '';
-        if (m.description) html += `<p>${escapeHtml(m.description)}</p>`;
-        const assets = m.assets || [];
-        const lastText = assets.filter(a=>a.type==='text').slice(-1);
-        const others = assets.filter(a=>a.type!=='text');
-        const ordered = [...lastText, ...others];
-        ordered.forEach(asset => {
-          let block = `<div><b>${escapeHtml(asset.title || '')}</b><br>`;
-          if (asset.type === 'video') {
-            block += `<video src="${asset.url}" controls width="100%"></video>`;
-          } else if (asset.type === 'pdf') {
-            block += `<a href="${asset.url}" target="_blank">PDF</a>`;
-          } else if (asset.type === 'link') {
-            block += `<a href="${asset.url}" target="_blank">${asset.url}</a>`;
-          } else if (asset.type === 'text') {
-            block += `<div>${escapeHtml(asset.text || '')}</div>`;
+        const textAssets = (m.assets || []).filter(a => a.type === 'text');
+        
+        if (textAssets.length > 0) {
+          // Get the latest text asset content
+          const latestTextAsset = textAssets[textAssets.length - 1];
+          const contentText = latestTextAsset.text || '';
+          
+          if (contentText.trim()) {
+            // Display the content as plain text with proper formatting
+            const formattedContent = contentText
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.length > 0)
+              .map(line => `<p>${escapeHtml(line)}</p>`)
+              .join('');
+            html += formattedContent;
           }
-          block += '</div>';
-          html += block;
-        });
-        elContent.innerHTML = html;
+        }
+        
+        // Add description if available
+        if (m.description && m.description.trim()) {
+          html += `<div class="course-description">${escapeHtml(m.description)}</div>`;
+        }
+        
+        elContent.innerHTML = html || '<div class="help-muted">No written content available.</div>';
+      }
+
+      if (detailsAttachments) {
+        const attachments = (m.assets || []).filter(asset => asset.type === 'image' || asset.type === 'pdf');
+        if (!attachments.length) {
+          detailsAttachments.innerHTML = '<div class="help-muted">No attachments available.</div>';
+        } else {
+          const gallery = attachments.map(asset => buildAttachmentCard(asset)).join('');
+          detailsAttachments.innerHTML = gallery;
+        }
       }
     } catch (e) {
+      console.error(e);
       const elTitle = qs("#detailsTitle");
       if (elTitle) elTitle.textContent = 'Error loading course';
+      const elContent = qs("#detailsContent");
+      if (elContent) elContent.innerHTML = '<div class="help-error">Unable to load course content.</div>';
+      if (detailsAttachments) {
+        detailsAttachments.innerHTML = '<div class="help-error">Unable to load attachments.</div>';
+      }
     }
     const backBtn = qs("#btnBackFromDetails");
     if (backBtn) backBtn.onclick = function(){ setView("home"); };
+  }
+
+  function buildAttachmentCard(asset){
+    const title = escapeHtml(asset.title || (asset.type === 'pdf' ? 'PDF document' : 'Image'));
+    const url = escapeHtml(asset.url || '#');
+    if (asset.type === 'image') {
+      return `<div class="asset-card"><img src="${url}" alt="${title}"><div class="asset-card__title">${title}</div><div class="asset-card__actions"><a href="${url}" target="_blank" rel="noopener" class="chip-btn">View</a><a href="${url}" download class="chip-btn">Download</a></div></div>`;
+    }
+    return `<div class="asset-card asset-card--pdf"><span class="material-icons">picture_as_pdf</span><div><div class="asset-card__title">${title}</div><div class="asset-card__actions"><a href="${url}" target="_blank" rel="noopener" class="chip-btn">Open</a><a href="${url}" download class="chip-btn">Download</a></div></div></div>`;
   }
 
   // Filters
@@ -446,6 +864,7 @@
 
   // Event listeners
   document.addEventListener("DOMContentLoaded", ()=>{
+    renderAddAttachments();
     if (window.location && window.location.pathname === '/courses/manage') {
       setView("manage");
       renderManage();
@@ -453,9 +872,16 @@
       setView("home");
     }
     btnManage && btnManage.addEventListener("click", ()=>{ window.location.href = '/courses/manage'; });
-    btnAdd && btnAdd.addEventListener("click", ()=> setView("add"));
-    btnCancelAdd && btnCancelAdd.addEventListener("click", ()=> setView("manage"));
+    btnAdd && btnAdd.addEventListener("click", ()=> {
+      resetAddForm();
+      setView("add");
+    });
+    btnCancelAdd && btnCancelAdd.addEventListener("click", ()=> {
+      resetAddForm();
+      setView("manage");
+    });
     btnSaveAdd && btnSaveAdd.addEventListener("click", onSave);
+    if (btnAddAttachment) btnAddAttachment.addEventListener("click", stageAddAttachment);
     filterCategory && filterCategory.addEventListener("change", ()=>{ state.category = filterCategory.value; state.page=1; renderManage(); });
     filterRole && filterRole.addEventListener("change", ()=>{ state.role = filterRole.value; state.page=1; renderManage(); });
     btnDeleteSelected && btnDeleteSelected.addEventListener("click", onBulkDelete);

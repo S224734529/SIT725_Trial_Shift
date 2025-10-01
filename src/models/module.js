@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 
 const AssetSchema = new mongoose.Schema({
-  type: { type: String, enum: ['video', 'pdf', 'link', 'text'], required: true },
+  type: { type: String, enum: ['video', 'pdf', 'link', 'text', 'image'], required: true },
   url: { type: String },
   text: { type: String },
   title: { type: String, required: true },
   order: { type: Number, default: 0 },
+  publicId: { type: String },
 });
 
 const ReactionSchema = new mongoose.Schema({
