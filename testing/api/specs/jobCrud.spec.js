@@ -28,4 +28,27 @@ describe('Job CRUD API', () => {
     });
 
   // Test cases will go here
+
+  //Test Case for Job Creation
+  it('should create a new job', async () => {
+  const jobData = {
+    title: 'Test Job',
+    category: 'kitchenhand',
+    location: 'Burwood',
+    shiftDetails: '8 AM - 4 PM',
+  };
+
+  const res = await request(server)
+    .post('/api/jobs')
+    .send(jobData)
+    .expect(201);
+
+  expect(res.body.title).toBe(jobData.title);
+  expect(res.body.location).toBe(jobData.location);
+  expect(res.body.shiftDetails).toBe(jobData.shiftDetails);
+
+  const job = await Job.findOne({ title: 'Test Job' });
+  expect(job).toBeTruthy();
+  expect(job.category).toBeDefined();
+});
 });
