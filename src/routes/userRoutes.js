@@ -2,14 +2,19 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const path = require("path");
-const { register, login, getProfile, updateProfile, deleteProfilePicture } = require("../controllers/userController");
+const { register, login, getProfile, updateProfile, deleteProfilePicture, uploadProfilePic } = require("../controllers/userController");
 const adminController = require("../controllers/adminController");
 const { authenticate, authorize } = require("../middleware/authMiddleware");
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const cloudinary = require("../config/cloudinary");
 
-// Multer config for profile image
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "public/uploads/"),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: "profile_pics",
+    allowed_formats: ["jpg", "png", "jpeg"],
+    public_id: (req, file) => Date.now() + "-" + file.originalname,
+  },
 });
 const upload = multer({ storage });
 
@@ -40,18 +45,17 @@ router.get("/employer", authenticate, authorize("employer"), (req, res) => {
 router.get("/profile", authenticate, getProfile);
 
 // Update profile (requires admin approval)
-router.put("/profile", authenticate, upload.single("profileImage"), updateProfile);
+router.put("/profile", authenticate, upload.single("profilePic"), updateProfile);
 
 // Delete profile picture
 router.delete("/profile/picture", authenticate, deleteProfilePicture);
 
-// ======================
-//  Admin Management
-// ======================
-
-// Profile requests
-router.get("/profile-requests", authenticate, authorize("admin"), adminController.getPendingProfileRequests);
-router.post("/profile-requests/:id/approve", authenticate, authorize("admin"), adminController.approveProfileUpdate);
-router.post("/profile-requests/:id/decline", authenticate, authorize("admin"), adminController.declineProfileUpdate);
+// Upload profile picture
+router.post(
+  "/upload/profile-pic",
+  authenticate,
+  upload.single("file"),
+  uploadProfilePic 
+);
 
 module.exports = router;

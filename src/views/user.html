@@ -1,38 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Page</title>
-    <link rel="stylesheet" href="../public/css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/admin-user.css">
 </head>
+
 <body>
-    <div class="container">
-        <h1>User Information</h1>
-        <div id="user-info">
-            <!-- User information will be displayed here -->
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar"></div>
+
+    <div class="main-content" style="max-width: 900px; margin: 40px auto;">
+        <h2>User Management</h2>
+        <div id="welcomeMessage" class="welcome"></div>
+        <div style="margin-bottom: 18px;">
+            <button id="bulkDeleteBtn" class="logout-btn" style="background:#e53935;">Delete Selected Users</button>
         </div>
-        <div class="row">
-            <form id="user-form" class="col s12">
-                <div class="input-field col s6">
-                    <input type="text" id="name" required>
-                    <label for="name">Name</label>
-                </div>
-                <div class="input-field col s6">
-                    <input type="email" id="email" required>
-                    <label for="email">Email</label>
-                </div>
-                <div class="input-field col s6">
-                    <input type="password" id="password" required>
-                    <label for="password">Password</label>
-                </div>
-                <div class="input-field col s6">
-                    <button type="submit" class="btn">Submit</button>
-                </div>
-            </form>
-        </div>
+        <table id="usersTable" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr style="background:#f6f6f6;">
+                    <th><input type="checkbox" id="selectAll"></th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Users will be rendered here -->
+            </tbody>
+        </table>
     </div>
-    <script src="../public/js/main.js"></script>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay" style="display:none;">
+      <div class="modal-content">
+        <span id="confirmMessage"></span>
+        <div style="margin-top:18px;">
+          <button onclick="confirmAction()" class="modal-close-btn" style="background:#43a047;">Yes</button>
+          <button onclick="closeConfirmModal()" class="modal-close-btn" style="background:#e53935;">No</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script src="/components/sidebar.js"></script>
+    <script>
+        let confirmCallback = null;
+
+        function showConfirm(message, callback) {
+          document.getElementById('confirmMessage').textContent = message;
+          document.getElementById('confirmModal').style.display = 'flex';
+          confirmCallback = callback;
+        }
+
+        function closeConfirmModal() {
+          document.getElementById('confirmModal').style.display = 'none';
+          confirmCallback = null;
+        }
+
+        function confirmAction() {
+          if (confirmCallback) confirmCallback();
+          closeConfirmModal();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadSidebar();
+
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/";
+                return;
+            }
+
+            // Fetch and render users
+            async function fetchUsers() {
+                const res = await fetch("/api/admin/users", {
+                    headers: { Authorization: "Bearer " + token }
+                });
+                const users = await res.json();
+                renderUsers(users);
+            }
+
+            function renderUsers(users) {
+                const tbody = document.querySelector("#usersTable tbody");
+                tbody.innerHTML = users.map(user => `
+                    <tr>
+                        <td><input type="checkbox" class="userCheckbox" value="${user._id}"></td>
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.role}</td>
+                        <td>${user.active ? "Active" : "Inactive"}</td>
+                        <td>
+                            <button onclick="removeUser('${user._id}')" class="logout-btn" style="background:#e53935; margin-right:6px;">Delete</button>
+                            <button onclick="toggleUserActive('${user._id}', '${user.active}')" class="logout-btn" style="background:#1976d2;">${user.active ? "Deactivate" : "Activate"}</button>
+                        </td>
+                    </tr>
+                `).join("");
+                updateBulkDeleteBtnVisibility();
+            }
+
+            // Remove user with popup confirmation
+            window.removeUser = function(id) {
+                showConfirm("Are you sure you want to permanently delete this user?", async function() {
+                    const res = await fetch(`/api/admin/users/${id}`, {
+                        method: "DELETE",
+                        headers: { Authorization: "Bearer " + token }
+                    });
+                    if (res.ok) fetchUsers();
+                });
+            };
+
+            // Toggle user active/inactive
+            window.toggleUserActive = async function(id, isActive) {
+                isActive = (isActive === "true");
+                const res = await fetch(`/api/admin/users/${id}/active`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: "Bearer " + token
+                    },
+                    body: JSON.stringify({ active: !isActive })
+                });
+                if (res.ok) fetchUsers();
+            };
+
+            // Bulk delete with popup confirmation
+            document.getElementById("bulkDeleteBtn").addEventListener("click", async () => {
+                const checked = Array.from(document.querySelectorAll(".userCheckbox:checked")).map(cb => cb.value);
+                if (checked.length === 0) return;
+                showConfirm("Delete selected users permanently?", async function() {
+                    const res = await fetch("/api/admin/users/bulk-delete", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: "Bearer " + token
+                        },
+                        body: JSON.stringify({ ids: checked })
+                    });
+                    if (res.ok) fetchUsers();
+                });
+            });
+
+            // Select all checkbox
+            document.getElementById("selectAll").addEventListener("change", function() {
+                document.querySelectorAll(".userCheckbox").forEach(cb => cb.checked = this.checked);
+                updateBulkDeleteBtnVisibility();
+            });
+
+            function updateBulkDeleteBtnVisibility() {
+                const checked = document.querySelectorAll(".userCheckbox:checked");
+                document.getElementById("bulkDeleteBtn").style.display = checked.length > 0 ? "inline-block" : "none";
+            }
+
+            // Update visibility when checkboxes change
+            document.addEventListener("change", function(e) {
+                if (e.target.classList.contains("userCheckbox") || e.target.id === "selectAll") {
+                    updateBulkDeleteBtnVisibility();
+                }
+            });
+
+            // Hide button initially
+            document.getElementById("bulkDeleteBtn").style.display = "none";
+
+            fetchUsers();
+        });
+    </script>
 </body>
 </html>

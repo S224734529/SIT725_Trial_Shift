@@ -11,22 +11,44 @@ exports.list = async (req, res) => {
 };
 
 // POST /api/job-preferences
+// exports.create = async (req, res) => {
+//   try {
+//     const { preferredLocation, preferredCategories = [] } = req.body;
+//     if (!preferredLocation) return res.status(400).json({ message: 'preferredLocation is required' });
+
+//     const pref = await JobPreference.create({
+//       user: req.user.id,
+//       preferredLocation,
+//       preferredCategories,
+//     });
+//     res.status(201).json(pref);
+//   } catch (e) {
+//     res.status(500).json({ message: 'Failed to create preference' });
+//   }
+// };
 exports.create = async (req, res) => {
   try {
-    const { preferredLocation, preferredCategories = [] } = req.body;
+    const { preferredLocation, preferredCategories } = req.body;
     if (!preferredLocation) return res.status(400).json({ message: 'preferredLocation is required' });
+
+    let categories = preferredCategories;
+    if (typeof categories === 'string') {
+      categories = categories.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (!Array.isArray(categories)) {
+      categories = [];
+    }
 
     const pref = await JobPreference.create({
       user: req.user.id,
       preferredLocation,
-      preferredCategories,
+      preferredCategories: categories,
     });
     res.status(201).json(pref);
   } catch (e) {
+    console.error(e); // Add error logging
     res.status(500).json({ message: 'Failed to create preference' });
   }
 };
-
 // PUT /api/job-preferences/:id
 exports.update = async (req, res) => {
   try {

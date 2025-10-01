@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authenticate, authorize } = require("../middleware/authMiddleware");
-const jobPreferenceController = require('../controllers/jobPrefereceController');
+const jobPreferenceController = require('../controllers/jobPreferenceController');
 
 router.use(authenticate); // protect everything below
 

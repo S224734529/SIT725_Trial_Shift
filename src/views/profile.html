@@ -38,7 +38,8 @@
 
       <!-- Declined update banner -->
       <div id="declinedBanner" style="display:none; background:#f8d7da; color:#721c24; padding:10px; border-radius:6px; margin-bottom:16px;">
-        Your last profile update was declined. Please update your profile again.
+        <span id="declinedText">Your last profile update was declined. Please update your profile again.</span>
+        <div id="declinedReason" style="margin-top:6px; font-size:0.98em;"></div>
       </div>
 
       <!-- Form -->
@@ -51,7 +52,21 @@
           <div class="field"><input type="email" id="email" name="email" readonly></div>
 
           <div class="label"><i class="material-icons">public</i> State</div>
-          <div class="field"><input type="text" id="state" name="state" required></div>
+          <div class="field">
+            <div class="input-field">
+              <select id="state" name="state" required>
+                <option value="">Select your state</option>
+                <option>New South Wales</option>
+                <option>Victoria</option>
+                <option>Queensland</option>
+                <option>Western Australia</option>
+                <option>South Australia</option>
+                <option>Tasmania</option>
+                <option>Northern Territory</option>
+                <option>Australian Capital Territory</option>
+              </select>
+            </div>
+          </div>
 
           <div class="label"><i class="material-icons">security</i> Role</div>
           <div class="field"><input type="text" id="role" name="role" readonly></div>
@@ -86,6 +101,62 @@
       document.getElementById('msgOk').style.display = 'none';
     }
 
+    // Save profile
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+
+      // Check if image is selected
+      const file = document.getElementById("profilePic").files[0];
+
+      let profilePicUrl = null;
+
+      if (file) {
+        // Upload image first
+        const imgData = new FormData();
+        imgData.append("file", file);
+
+        try {
+          const imgRes = await fetch("/api/users/upload/profile-pic", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + token }, 
+            body: imgData
+          });
+          const imgJson = await imgRes.json();
+          if (!imgRes.ok) throw new Error(imgJson.message || "Image upload failed");
+          profilePicUrl = imgJson.url;
+        } catch (err) {
+          showErr("Image upload failed: " + err.message);
+          return;
+        }
+      }
+
+      // Prepare profile update data
+      const updateData = {
+        name: formData.get("name"),
+        state: formData.get("state"),
+      };
+      if (profilePicUrl) updateData.profilePic = profilePicUrl;
+
+      try {
+        const res = await fetch("/api/users/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
+          },
+          body: JSON.stringify(updateData)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Update failed");
+        showOk("Profile updated successfully.", 2000);
+        loadProfile();
+      } catch (err) {
+        showErr(err.message);
+      }
+    });
+
     // Load profile
     async function loadProfile() {
       try {
@@ -98,7 +169,7 @@
         const preview = document.getElementById("profilePreview");
         const delBtn  = document.getElementById("deletePicBtn");
         if (user.profilePic) {
-          preview.src = user.profilePic;
+          preview.src = user.profilePic; // Cloudinary URL
           preview.style.display = "inline-block";
           delBtn.style.display = "inline-block";
         } else {
@@ -110,9 +181,10 @@
           document.getElementById('pendingBanner').style.display = 'block';
         }
 
-        if (user.pendingApproval === null && user.lastDeclinedUpdate) {
+        if (!user.pendingApproval && user.lastDeclinedUpdate) {
           document.getElementById('declinedBanner').style.display = 'block';
-
+          document.getElementById('declinedReason').textContent =
+            user.lastDeclinedUpdate.reason ? "Reason: " + user.lastDeclinedUpdate.reason : "";
           // clear the flag after showing once
           fetch("/api/users/profile/clear-decline", {
             method: "POST",
@@ -175,25 +247,6 @@
 
         // Auto-dismiss after 2s
         showOk("Profile picture deleted.", 2000);
-      } catch (err) {
-        showErr(err.message);
-      }
-    });
-
-    // Save profile
-    document.getElementById("profileForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      try {
-        const res = await fetch("/api/users/profile", {
-          method: "PUT",
-          headers: { Authorization: "Bearer " + token },
-          body: formData
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || "Update failed");
-        showOk("Profile updated successfully.", 2000);
-        loadProfile();
       } catch (err) {
         showErr(err.message);
       }

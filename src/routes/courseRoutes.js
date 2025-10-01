@@ -17,17 +17,17 @@ router.post(
 // Users: Fetch all modules
 router.get('/modules', authenticate, courseController.getModules);
 
+// Admin: Bulk operations
+router.delete('/modules/bulk-delete', authenticate, authorize('admin'), courseController.bulkDeleteCourses);
+router.patch('/modules/bulk-archive', authenticate, authorize('admin'), courseController.bulkArchiveModules);
+
 // Users: Fetch module details and assets
 router.get('/modules/:id', authenticate, courseController.getModuleById);
-
 
 // Admin: Delete a module
 router.delete('/modules/:id', authenticate, authorize('admin'), courseController.deleteModule);
 
 // Admin: Update or archive a module
 router.patch('/modules/:id', authenticate, authorize('admin'), courseController.updateModule);
-
-// Admin: Publish a new version
-router.post('/modules/:id/release', authenticate, authorize('admin'), courseController.releaseModule);
 
 module.exports = router;
