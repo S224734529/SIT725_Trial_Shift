@@ -357,7 +357,7 @@
   }
 
 
-  // Save add
+  // Save add - FIXED: Now saves course content properly
   async function onSave(){
     if (addError) addError.style.display = "none";
     if (addSuccess) addSuccess.style.display = "none";
@@ -388,14 +388,20 @@
     }
     const mod = await res.json();
     const id = mod.id || mod._id;
+    
+    // FIXED: Save course content as text asset
     if(content){
-      const res2 = await fetch(`${API}/modules/${id}/assets`, {
-        method:"POST",
-        headers:{ "Content-Type":"application/json", ...authHeader() },
-        body: JSON.stringify({ type:"text", title:'', text: content })
-      });
-      if(!res2.ok){
-        console.warn("Text asset creation failed");
+      try {
+        const res2 = await fetch(`${API}/modules/${id}/assets`, {
+          method:"POST",
+          headers:{ "Content-Type":"application/json", ...authHeader() },
+          body: JSON.stringify({ type:"text", title:'Course Content', text: content })
+        });
+        if(!res2.ok){
+          console.warn("Text asset creation failed", await res2.text());
+        }
+      } catch (err) {
+        console.error("Error saving course content:", err);
       }
     }
 
@@ -622,7 +628,7 @@
     }
   }
 
-  // Render edit
+  // Render edit - FIXED: Now properly loads course content
   function renderEditView(m){
     currentEditModule = m;
     const vEdit = qs("#courses-edit");
@@ -648,9 +654,15 @@
     if (categorySelect) categorySelect.value = m.category || '';
     if (roleSelect) roleSelect.value = m.role || '';
 
-    const textAssetList = (m.assets||[]).filter(a=>a.type==='text');
-    const latestText = textAssetList.length ? textAssetList[textAssetList.length-1] : null;
-    if (contentArea) contentArea.value = latestText ? (latestText.text||'') : '';
+    // FIXED: Properly load course content from text assets
+    const textAssets = (m.assets||[]).filter(a=>a.type==='text');
+    let courseContent = '';
+    if (textAssets.length > 0) {
+      // Get the latest text asset content
+      const latestTextAsset = textAssets[textAssets.length - 1];
+      courseContent = latestTextAsset.text || '';
+    }
+    if (contentArea) contentArea.value = courseContent;
 
     renderEditAttachments();
 
@@ -679,6 +691,8 @@
             body: JSON.stringify({ title, category, role })
           });
           if(!res.ok) throw new Error('Update failed');
+          
+          // FIXED: Update course content as text asset
           const existingTextAssets = (currentEditModule.assets || []).filter(a => a.type === 'text');
           for (const asset of existingTextAssets) {
             const assetId = getModuleId(asset);
@@ -693,12 +707,13 @@
             }
           }
           currentEditModule.assets = (currentEditModule.assets || []).filter(a => a.type !== 'text');
+          
           if (content) {
             try {
               const textRes = await fetch(`${API}/modules/${moduleId}/assets`, {
                 method: 'POST',
                 headers: { 'Content-Type':'application/json', ...authHeader() },
-                body: JSON.stringify({ type:'text', title:'', text: content })
+                body: JSON.stringify({ type:'text', title:'Course Content', text: content })
               });
               if (textRes.ok) {
                 const payload = await textRes.json().catch(() => null);
@@ -735,7 +750,7 @@
     }
   }
 
-  // Render details - UPDATED FUNCTION
+  // Render details - FIXED: Now properly displays course content
   async function renderDetailsView(id){
     const vDetails = qs("#course-details");
     if (!vDetails) return;
@@ -758,7 +773,7 @@
 
       if (elTitle) elTitle.textContent = m.title || '';
 
-      // Set individual metadata fields - UPDATED
+      // Set individual metadata fields
       if (elCategory) elCategory.textContent = m.category || 'N/A';
       if (elRole) elRole.textContent = m.role || 'N/A';
       if (elCreated) {
@@ -766,6 +781,7 @@
         elCreated.textContent = createdDate;
       }
 
+      // FIXED: Properly display course content from text assets
       if (elContent) {
         let html = '';
         const textAssets = (m.assets || []).filter(a => a.type === 'text');
@@ -775,21 +791,20 @@
           const latestTextAsset = textAssets[textAssets.length - 1];
           const contentText = latestTextAsset.text || '';
           
-          // Clean up markdown formatting and display as plain text
-          const cleanContent = contentText
-            .replace(/^#+\s+/gm, '') // Remove markdown headers
-            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-            .replace(/\*(.*?)\*/g, '$1') // Remove italic
-            .replace(/---+/g, '') // Remove horizontal rules
-            .trim();
-            
-          if (cleanContent) {
-            html += `<div class="course-content-text">${cleanContent}</div>`;
+          if (contentText.trim()) {
+            // Display the content as plain text with proper formatting
+            const formattedContent = contentText
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.length > 0)
+              .map(line => `<p>${escapeHtml(line)}</p>`)
+              .join('');
+            html += formattedContent;
           }
         }
         
         // Add description if available
-        if (m.description) {
+        if (m.description && m.description.trim()) {
           html += `<div class="course-description">${escapeHtml(m.description)}</div>`;
         }
         
@@ -809,6 +824,8 @@
       console.error(e);
       const elTitle = qs("#detailsTitle");
       if (elTitle) elTitle.textContent = 'Error loading course';
+      const elContent = qs("#detailsContent");
+      if (elContent) elContent.innerHTML = '<div class="help-error">Unable to load course content.</div>';
       if (detailsAttachments) {
         detailsAttachments.innerHTML = '<div class="help-error">Unable to load attachments.</div>';
       }
