@@ -31,6 +31,12 @@
   const btnAddAttachment = qs("#btnAddAttachment");
   const addAssetError = qs("#addAssetError");
   const addAssetSuccess = qs("#addAssetSuccess");
+  const addAssetLoading = qs("#addAssetLoading");
+  const editAssetLoading = qs("#editAssetLoading");
+  const addAssetLoadingMessage = addAssetLoading ? addAssetLoading.querySelector(".asset-upload__message") : null;
+  const editAssetLoadingMessage = editAssetLoading ? editAssetLoading.querySelector(".asset-upload__message") : null;
+  const defaultAddLoadingMessage = addAssetLoadingMessage ? addAssetLoadingMessage.textContent.trim() : "Uploading attachments...";
+  const defaultEditLoadingMessage = editAssetLoadingMessage ? editAssetLoadingMessage.textContent.trim() : "Uploading attachment...";
   const editAssetList = qs("#editAssetList");
   const editAssetTitle = qs("#editAssetTitle");
   const editAssetFile = qs("#editAssetFile");
@@ -212,6 +218,28 @@
   function clearAddAttachmentFeedback(){
     if (addAssetError) addAssetError.style.display = 'none';
     if (addAssetSuccess) addAssetSuccess.style.display = 'none';
+    setAddUploading(false);
+  }
+
+  function setAddUploading(isLoading, message){
+    if (!addAssetLoading) return;
+    const nextMessage = typeof message === "string" && message.length ? message : defaultAddLoadingMessage;
+    if (addAssetLoadingMessage) addAssetLoadingMessage.textContent = nextMessage;
+    addAssetLoading.style.display = isLoading ? "inline-flex" : "none";
+    [btnSaveAdd, btnCancelAdd, btnAddAttachment, addAssetFile, addAssetTitle].forEach((control) => {
+      if (control) control.disabled = !!isLoading;
+    });
+  }
+
+  function resetAddForm(){
+    if (addTitle) addTitle.value = "";
+    if (addCategory) addCategory.value = "";
+    if (addRole) addRole.value = "";
+    if (addCourseContent) addCourseContent.value = "";
+    if (addQuizReq) addQuizReq.checked = false;
+    if (addError) addError.style.display = "none";
+    if (addSuccess) addSuccess.style.display = "none";
+    resetAddAttachmentState();
   }
 
   function renderAddAttachments(){
@@ -331,15 +359,19 @@
 
   // Save add
   async function onSave(){
-    addError.style.display = "none"; addSuccess.style.display = "none";
+    if (addError) addError.style.display = "none";
+    if (addSuccess) addSuccess.style.display = "none";
     clearAddAttachmentFeedback();
-    const title = addTitle.value.trim();
-    const category = addCategory.value.trim();
-    const role = addRole.value.trim();
-    const content = addCourseContent.value.trim();
+    const title = addTitle ? addTitle.value.trim() : "";
+    const category = addCategory ? addCategory.value.trim() : "";
+    const role = addRole ? addRole.value.trim() : "";
+    const content = addCourseContent ? addCourseContent.value.trim() : "";
     if(!title || !category){
-      addError.textContent = "Title and Category are required.";
-      addError.style.display = "block"; return;
+      if (addError) {
+        addError.textContent = "Title and Category are required.";
+        addError.style.display = "block";
+      }
+      return;
     }
     const res = await fetch(`${API}/modules`, {
       method:"POST",
@@ -348,8 +380,11 @@
     });
     if(!res.ok){
       const t = await res.text().catch(()=> "");
-      addError.textContent = `Create failed. ${t}`;
-      addError.style.display = "block"; return;
+      if (addError) {
+        addError.textContent = `Create failed. ${t}`;
+        addError.style.display = "block";
+      }
+      return;
     }
     const mod = await res.json();
     const id = mod.id || mod._id;
@@ -357,33 +392,49 @@
       const res2 = await fetch(`${API}/modules/${id}/assets`, {
         method:"POST",
         headers:{ "Content-Type":"application/json", ...authHeader() },
-        body: JSON.stringify({ type:"text", title:"Overview", text: content })
+        body: JSON.stringify({ type:"text", title:'', text: content })
       });
       if(!res2.ok){
         console.warn("Text asset creation failed");
       }
     }
 
-    if (pendingAddAttachments.length){
-      for (const attachment of pendingAddAttachments){
-        try {
-          const titleForUpload = attachment.title || (attachment.file ? attachment.file.name : 'Attachment');
-          await uploadFileAttachment(id, attachment.file, titleForUpload);
-        } catch (err) {
-          console.error('Attachment upload failed', err);
+    const stagedCount = pendingAddAttachments.length;
+    if (stagedCount){
+      let uploadFailures = 0;
+      try {
+        setAddUploading(true, stagedCount > 1 ? `Uploading ${stagedCount} attachments...` : defaultAddLoadingMessage);
+        for (let index = 0; index < stagedCount; index++){
+          const attachment = pendingAddAttachments[index];
+          if (!attachment || !attachment.file) continue;
+          const progressMessage = stagedCount > 1 ? `Uploading attachment ${index + 1} of ${stagedCount}...` : defaultAddLoadingMessage;
+          setAddUploading(true, progressMessage);
+          const titleForUpload = attachment.title || (attachment.file ? attachment.file.name : "Attachment");
+          try {
+            await uploadFileAttachment(id, attachment.file, titleForUpload);
+          } catch (err) {
+            uploadFailures++;
+            console.error('Attachment upload failed', err);
+          }
         }
+      } finally {
+        setAddUploading(false);
+      }
+      if (uploadFailures) {
+        console.warn(`Failed to upload ${uploadFailures} attachment${uploadFailures === 1 ? '' : 's'}.`);
       }
     }
 
-    addSuccess.style.display = "inline-block";
-    addTitle.value = "";
-    addCourseContent.value = "";
-    addQuizReq.checked = false;
+    if (addSuccess) addSuccess.style.display = "inline-block";
+    if (addTitle) addTitle.value = "";
+    if (addCategory) addCategory.value = "";
+    if (addRole) addRole.value = "";
+    if (addCourseContent) addCourseContent.value = "";
+    if (addQuizReq) addQuizReq.checked = false;
     resetAddAttachmentState();
     await loadAll();
     setView("manage");
   }
-
   // Archive toggle
   async function onArchive(id){
     const course = state.all.find(c => String(c.id) === String(id));
@@ -450,6 +501,17 @@
   function clearAssetFeedback(){
     if (editAssetError) editAssetError.style.display = 'none';
     if (editAssetSuccess) editAssetSuccess.style.display = 'none';
+    setEditUploading(false);
+  }
+
+  function setEditUploading(isLoading, message){
+    if (!editAssetLoading) return;
+    const nextMessage = typeof message === "string" && message.length ? message : defaultEditLoadingMessage;
+    if (editAssetLoadingMessage) editAssetLoadingMessage.textContent = nextMessage;
+    editAssetLoading.style.display = isLoading ? "inline-flex" : "none";
+    [btnUploadAsset, editAssetFile, editAssetTitle].forEach((control) => {
+      if (control) control.disabled = !!isLoading;
+    });
   }
 
   function reportAssetError(message){
@@ -522,7 +584,7 @@
       return;
     }
     try {
-      btnUploadAsset.disabled = true;
+      setEditUploading(true);
       const data = await uploadFileAttachment(moduleId, file, customTitle);
       if (data && data.asset){
         const assets = Array.isArray(currentEditModule.assets) ? currentEditModule.assets : [];
@@ -537,7 +599,7 @@
       console.error(err);
       reportAssetError('Failed to upload attachment.');
     } finally {
-      btnUploadAsset.disabled = false;
+      setEditUploading(false);
     }
   }
   async function onDeleteAsset(assetId){
@@ -617,14 +679,38 @@
             body: JSON.stringify({ title, category, role })
           });
           if(!res.ok) throw new Error('Update failed');
+          const existingTextAssets = (currentEditModule.assets || []).filter(a => a.type === 'text');
+          for (const asset of existingTextAssets) {
+            const assetId = getModuleId(asset);
+            if (!assetId) continue;
+            try {
+              await fetch(`${API}/modules/${moduleId}/assets/${assetId}`, {
+                method: 'DELETE',
+                headers: { ...authHeader() }
+              });
+            } catch (cleanupErr) {
+              console.error('Text asset cleanup failed', cleanupErr);
+            }
+          }
+          currentEditModule.assets = (currentEditModule.assets || []).filter(a => a.type !== 'text');
           if (content) {
             try {
-              await fetch(`${API}/modules/${moduleId}/assets`, {
+              const textRes = await fetch(`${API}/modules/${moduleId}/assets`, {
                 method: 'POST',
                 headers: { 'Content-Type':'application/json', ...authHeader() },
-                body: JSON.stringify({ type:'text', title:'Overview', text: content })
+                body: JSON.stringify({ type:'text', title:'', text: content })
               });
-            } catch (_) {}
+              if (textRes.ok) {
+                const payload = await textRes.json().catch(() => null);
+                if (payload && payload.asset) {
+                  currentEditModule.assets.push(payload.asset);
+                }
+              } else {
+                console.warn('Text asset creation failed');
+              }
+            } catch (textErr) {
+              console.error('Text asset save failed', textErr);
+            }
           }
           if (elOk) elOk.style.display = 'inline-block';
           await loadAll();
@@ -683,7 +769,13 @@
         if (m.description) html += `<p>${escapeHtml(m.description)}</p>`;
         const textAssets = (m.assets || []).filter(a => a.type === 'text');
         textAssets.forEach(asset => {
-          html += `<div><strong>${escapeHtml(asset.title || '')}</strong><div>${escapeHtml(asset.text || '')}</div></div>`;
+          const safeTitle = escapeHtml((asset.title || '').trim());
+          const safeText = escapeHtml(asset.text || '');
+          if (safeTitle) {
+            html += `<div><strong>${safeTitle}</strong><div>${safeText}</div></div>`;
+          } else if (safeText) {
+            html += `<div>${safeText}</div>`;
+          }
         });
         elContent.innerHTML = html || '<div class="help-muted">No written content available.</div>';
       }
@@ -747,8 +839,14 @@
       setView("home");
     }
     btnManage && btnManage.addEventListener("click", ()=>{ window.location.href = '/courses/manage'; });
-    btnAdd && btnAdd.addEventListener("click", ()=> { setView("add"); clearAddAttachmentFeedback(); renderAddAttachments(); });
-    btnCancelAdd && btnCancelAdd.addEventListener("click", ()=> { resetAddAttachmentState(); setView("manage"); });
+    btnAdd && btnAdd.addEventListener("click", ()=> {
+      resetAddForm();
+      setView("add");
+    });
+    btnCancelAdd && btnCancelAdd.addEventListener("click", ()=> {
+      resetAddForm();
+      setView("manage");
+    });
     btnSaveAdd && btnSaveAdd.addEventListener("click", onSave);
     if (btnAddAttachment) btnAddAttachment.addEventListener("click", stageAddAttachment);
     filterCategory && filterCategory.addEventListener("change", ()=>{ state.category = filterCategory.value; state.page=1; renderManage(); });

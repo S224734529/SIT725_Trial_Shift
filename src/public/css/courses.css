@@ -550,3 +550,26 @@ body {
   gap: 10px;
 }
 
+.asset-upload__loading {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+.asset-upload__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #0ea5a3;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: asset-upload-spin 0.8s linear infinite;
+}
+.asset-upload__loading .asset-upload__message {
+  line-height: 1.2;
+}
+@keyframes asset-upload-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
