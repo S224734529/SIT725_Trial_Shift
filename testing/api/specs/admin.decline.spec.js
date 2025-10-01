@@ -7,7 +7,7 @@ let app;
 let User;
 let ProfileUpdateRequest;
 
-describe("Approve Profile Update API", () => {
+describe("Decline Profile Update API", () => {
     let mongoServer;
     let admin, user, adminToken, userToken;
 
