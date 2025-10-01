@@ -31,7 +31,7 @@ describe("Course Management API", () => {
   });
 
   describe("GET /api/courses/modules", () => {
-    test("lists non-archived modules for jobseekers", async () => {
+    test("[TC-CM-001] lists non-archived modules for jobseekers", async () => {
       await Module.create([
         {
           title: "Kitchen Basics",
@@ -59,7 +59,7 @@ describe("Course Management API", () => {
       expect(titles).not.toContain("Kitchen Deep Clean");
     });
 
-    test("admin can see all modules including archived", async () => {
+    test("[TC-CM-002] admin can see all modules including archived", async () => {
       await Module.create([
         {
           title: "Delivery Induction",
@@ -86,7 +86,7 @@ describe("Course Management API", () => {
       expect(titles).toContain("Archived Delivery Induction");
     });
 
-    test("filters modules by category", async () => {
+    test("[TC-CM-003] filters modules by category", async () => {
       await Module.create([
         {
           title: "Delivery Logistics",
@@ -115,7 +115,7 @@ describe("Course Management API", () => {
       });
     });
 
-    test("searches modules by title", async () => {
+    test("[TC-CM-004] searches modules by title", async () => {
       await Module.create([
         {
           title: "Advanced Delivery Planning",
@@ -141,7 +141,7 @@ describe("Course Management API", () => {
       expect(response.body[0].title).toContain("Delivery");
     });
 
-    test("filters only archived modules for admin", async () => {
+    test("[TC-CM-005] filters only archived modules for admin", async () => {
       await Module.create([
         {
           title: "Delivery Refresher",
@@ -168,9 +168,73 @@ describe("Course Management API", () => {
       expect(response.body[0].isArchived).toBe(true);
     });
   });
+  describe("GET /api/courses/modules/:id", () => {
+    test("[TC-CM-006] fetches module details successfully", async () => {
+      const module = await Module.create({
+        title: "Delivery Orientation",
+        category: "delivery",
+        role: "beginner",
+        isArchived: false,
+      });
 
+      const { token } = await createUserAndToken({ role: "jobseeker" });
+      const response = await request(app)
+        .get(`/api/courses/modules/${module.id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        title: "Delivery Orientation",
+        category: "delivery",
+      });
+    });
+
+    test("[TC-CM-007] jobseeker cannot fetch archived module details", async () => {
+      const module = await Module.create({
+        title: "Archived Delivery Induction",
+        category: "delivery",
+        role: "beginner",
+        isArchived: true,
+      });
+
+      const { token } = await createUserAndToken({ role: "jobseeker" });
+      const response = await request(app)
+        .get(`/api/courses/modules/${module.id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error", "Module not found");
+    });
+
+    test("[TC-CM-008] admin can fetch archived module details", async () => {
+      const module = await Module.create({
+        title: "Archived Delivery Induction",
+        category: "delivery",
+        role: "beginner",
+        isArchived: true,
+      });
+
+      const { token } = await createUserAndToken({ role: "admin" });
+      const response = await request(app)
+        .get(`/api/courses/modules/${module.id}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.title).toBe("Archived Delivery Induction");
+    });
+
+    test("[TC-CM-009] returns 404 for non-existent module", async () => {
+      const { token } = await createUserAndToken({ role: "jobseeker" });
+      const response = await request(app)
+        .get("/api/courses/modules/507f1f77bcf86cd799439011")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty("error", "Module not found");
+    });
+  });
   describe("POST /api/courses/modules", () => {
-    test("admin can create a module", async () => {
+    test("[TC-CM-010] admin can create a module", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -191,7 +255,7 @@ describe("Course Management API", () => {
       });
     });
 
-    test("admin can create a delivery module", async () => {
+    test("[TC-CM-011] admin can create a delivery module", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -207,7 +271,7 @@ describe("Course Management API", () => {
       expect(response.body.title).toBe("Delivery Route Planning");
     });
 
-    test("jobseeker cannot create a module", async () => {
+    test("[TC-CM-012] jobseeker cannot create a module", async () => {
       const { token } = await createUserAndToken({ role: "jobseeker" });
 
       const response = await request(app)
@@ -219,7 +283,7 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error", "Access denied");
     });
 
-    test("fails when title is missing", async () => {
+    test("[TC-CM-013] fails when title is missing", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -231,7 +295,7 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error");
     });
 
-    test("fails when category is missing", async () => {
+    test("[TC-CM-014] fails when category is missing", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -243,75 +307,8 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error");
     });
   });
-
-  describe("GET /api/courses/modules/:id", () => {
-    test("fetches module details successfully", async () => {
-      const module = await Module.create({
-        title: "Delivery Orientation",
-        category: "delivery",
-        role: "beginner",
-        isArchived: false,
-      });
-
-      const { token } = await createUserAndToken({ role: "jobseeker" });
-      const response = await request(app)
-        .get(`/api/courses/modules/${module.id}`)
-        .set("Authorization", `Bearer ${token}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body).toMatchObject({
-        title: "Delivery Orientation",
-        category: "delivery",
-      });
-    });
-
-    test("jobseeker cannot fetch archived module details", async () => {
-      const module = await Module.create({
-        title: "Archived Delivery Induction",
-        category: "delivery",
-        role: "beginner",
-        isArchived: true,
-      });
-
-      const { token } = await createUserAndToken({ role: "jobseeker" });
-      const response = await request(app)
-        .get(`/api/courses/modules/${module.id}`)
-        .set("Authorization", `Bearer ${token}`);
-
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty("error", "Module not found");
-    });
-
-    test("admin can fetch archived module details", async () => {
-      const module = await Module.create({
-        title: "Archived Delivery Induction",
-        category: "delivery",
-        role: "beginner",
-        isArchived: true,
-      });
-
-      const { token } = await createUserAndToken({ role: "admin" });
-      const response = await request(app)
-        .get(`/api/courses/modules/${module.id}`)
-        .set("Authorization", `Bearer ${token}`);
-
-      expect(response.status).toBe(200);
-      expect(response.body.title).toBe("Archived Delivery Induction");
-    });
-
-    test("returns 404 for non-existent module", async () => {
-      const { token } = await createUserAndToken({ role: "jobseeker" });
-      const response = await request(app)
-        .get("/api/courses/modules/507f1f77bcf86cd799439011")
-        .set("Authorization", `Bearer ${token}`);
-
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty("error", "Module not found");
-    });
-  });
-
   describe("PATCH /api/courses/modules/:id", () => {
-    test("admin can update module archive state", async () => {
+    test("[TC-CM-015] admin can update module archive state", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
       const module = await Module.create({
         title: "Seasonal Menu Overview",
@@ -329,7 +326,7 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("isArchived", true);
     });
 
-    test("admin can update module details", async () => {
+    test("[TC-CM-016] admin can update module details", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
       const module = await Module.create({
         title: "Delivery Equipment Basics",
@@ -348,7 +345,7 @@ describe("Course Management API", () => {
       expect(response.body.role).toBe("intermediate");
     });
 
-    test("returns 404 when updating non-existent module", async () => {
+    test("[TC-CM-017] returns 404 when updating non-existent module", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
       const response = await request(app)
         .patch("/api/courses/modules/507f1f77bcf86cd799439011")
@@ -359,9 +356,8 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error", "Module not found");
     });
   });
-
   describe("DELETE /api/courses/modules/:id", () => {
-    test("admin can delete a module", async () => {
+    test("[TC-CM-018] admin can delete a module", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
       const module = await Module.create({
         title: "Temporary Training",
@@ -380,7 +376,7 @@ describe("Course Management API", () => {
       expect(deleted).toBeNull();
     });
 
-    test("admin can delete a delivery module", async () => {
+    test("[TC-CM-019] admin can delete a delivery module", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
       const module = await Module.create({
         title: "Delivery Safety Review",
@@ -396,7 +392,7 @@ describe("Course Management API", () => {
       expect(response.body.message).toBe("Module deleted");
     });
 
-    test("returns 404 when deleting non-existent module", async () => {
+    test("[TC-CM-020] returns 404 when deleting non-existent module", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
       const response = await request(app)
         .delete("/api/courses/modules/507f1f77bcf86cd799439011")
@@ -406,9 +402,8 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error", "Module not found");
     });
   });
-
   describe("POST /api/courses/modules/:id/assets", () => {
-    test("uploads text asset successfully", async () => {
+    test("[TC-CM-021] uploads text asset successfully", async () => {
       const module = await Module.create({
         title: "Delivery Orientation",
         category: "delivery",
@@ -437,7 +432,7 @@ describe("Course Management API", () => {
       expect(updatedModule.assets).toHaveLength(1);
     });
 
-    test("fails when type is missing for non-file asset", async () => {
+    test("[TC-CM-022] fails when type is missing for non-file asset", async () => {
       const module = await Module.create({
         title: "Delivery Orientation",
         category: "delivery",
@@ -457,7 +452,7 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error");
     });
 
-    test("fails when title is missing for non-file asset", async () => {
+    test("[TC-CM-023] fails when title is missing for non-file asset", async () => {
       const module = await Module.create({
         title: "Delivery Orientation",
         category: "delivery",
@@ -477,7 +472,7 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error");
     });
 
-    test("fails when URL is missing for non-text asset", async () => {
+    test("[TC-CM-024] fails when URL is missing for non-text asset", async () => {
       const module = await Module.create({
         title: "Delivery Orientation",
         category: "delivery",
@@ -497,18 +492,19 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error");
     });
   });
-
   describe("DELETE /api/courses/modules/:id/assets/:assetId", () => {
-    test("deletes asset successfully", async () => {
+    test("[TC-CM-025] deletes asset successfully", async () => {
       const module = await Module.create({
         title: "Delivery Orientation",
         category: "delivery",
         role: "beginner",
-        assets: [{
-          type: "text",
-          title: "To Delete",
-          text: "This will be deleted",
-        }],
+        assets: [
+          {
+            type: "text",
+            title: "To Delete",
+            text: "This will be deleted",
+          },
+        ],
       });
 
       const assetId = module.assets[0]._id;
@@ -525,7 +521,7 @@ describe("Course Management API", () => {
       expect(updatedModule.assets).toHaveLength(0);
     });
 
-    test("returns 404 when asset not found", async () => {
+    test("[TC-CM-026] returns 404 when asset not found", async () => {
       const module = await Module.create({
         title: "Delivery Orientation",
         category: "delivery",
@@ -534,33 +530,44 @@ describe("Course Management API", () => {
 
       const { token } = await createUserAndToken({ role: "admin" });
       const response = await request(app)
-        .delete(`/api/courses/modules/${module.id}/assets/507f1f77bcf86cd799439011`)
+        .delete(
+          `/api/courses/modules/${module.id}/assets/507f1f77bcf86cd799439011`
+        )
         .set("Authorization", `Bearer ${token}`);
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty("error", "Asset not found");
     });
 
-    test("returns 404 when module not found", async () => {
+    test("[TC-CM-027] returns 404 when module not found", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
       const response = await request(app)
-        .delete("/api/courses/modules/507f1f77bcf86cd799439011/assets/507f1f77bcf86cd799439012")
+        .delete(
+          "/api/courses/modules/507f1f77bcf86cd799439011/assets/507f1f77bcf86cd799439012"
+        )
         .set("Authorization", `Bearer ${token}`);
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty("error", "Module not found");
     });
   });
-
   describe("DELETE /api/courses/modules/bulk-delete", () => {
-    test("bulk deletes modules successfully", async () => {
+    test("[TC-CM-028] bulk deletes modules successfully", async () => {
       const modules = await Module.create([
         { title: "Kitchen Basics", category: "kitchen", role: "beginner" },
-        { title: "Accounting Essentials", category: "accounting", role: "beginner" },
-        { title: "Delivery Refresher", category: "delivery", role: "intermediate" },
+        {
+          title: "Accounting Essentials",
+          category: "accounting",
+          role: "beginner",
+        },
+        {
+          title: "Delivery Refresher",
+          category: "delivery",
+          role: "intermediate",
+        },
       ]);
 
-      const moduleIds = modules.map(m => m._id);
+      const moduleIds = modules.map((m) => m._id);
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -569,13 +576,16 @@ describe("Course Management API", () => {
         .send({ ids: moduleIds });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("message", "Courses deleted successfully");
+      expect(response.body).toHaveProperty(
+        "message",
+        "Courses deleted successfully"
+      );
 
       const remainingModules = await Module.find({ _id: { $in: moduleIds } });
       expect(remainingModules).toHaveLength(0);
     });
 
-    test("fails with empty IDs array", async () => {
+    test("[TC-CM-029] fails with empty IDs array", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -587,7 +597,7 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error");
     });
 
-    test("fails with invalid IDs array", async () => {
+    test("[TC-CM-030] fails with invalid IDs array", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -599,15 +609,24 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error");
     });
   });
-
   describe("PATCH /api/courses/modules/bulk-archive", () => {
-    test("bulk archives modules successfully", async () => {
+    test("[TC-CM-031] bulk archives modules successfully", async () => {
       const modules = await Module.create([
-        { title: "Kitchen Basics", category: "kitchen", role: "beginner", isArchived: false },
-        { title: "Accounting Essentials", category: "accounting", role: "beginner", isArchived: false },
+        {
+          title: "Kitchen Basics",
+          category: "kitchen",
+          role: "beginner",
+          isArchived: false,
+        },
+        {
+          title: "Accounting Essentials",
+          category: "accounting",
+          role: "beginner",
+          isArchived: false,
+        },
       ]);
 
-      const moduleIds = modules.map(m => m._id);
+      const moduleIds = modules.map((m) => m._id);
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -616,19 +635,35 @@ describe("Course Management API", () => {
         .send({ ids: moduleIds, isArchived: true });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("message", "Courses archived successfully");
+      expect(response.body).toHaveProperty(
+        "message",
+        "Courses archived successfully"
+      );
 
-      const archivedModules = await Module.find({ _id: { $in: moduleIds }, isArchived: true });
+      const archivedModules = await Module.find({
+        _id: { $in: moduleIds },
+        isArchived: true,
+      });
       expect(archivedModules).toHaveLength(2);
     });
 
-    test("bulk unarchives modules successfully", async () => {
+    test("[TC-CM-032] bulk unarchives modules successfully", async () => {
       const modules = await Module.create([
-        { title: "Kitchen Basics", category: "kitchen", role: "beginner", isArchived: true },
-        { title: "Accounting Essentials", category: "accounting", role: "beginner", isArchived: true },
+        {
+          title: "Kitchen Basics",
+          category: "kitchen",
+          role: "beginner",
+          isArchived: true,
+        },
+        {
+          title: "Accounting Essentials",
+          category: "accounting",
+          role: "beginner",
+          isArchived: true,
+        },
       ]);
 
-      const moduleIds = modules.map(m => m._id);
+      const moduleIds = modules.map((m) => m._id);
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -637,13 +672,19 @@ describe("Course Management API", () => {
         .send({ ids: moduleIds, isArchived: false });
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("message", "Courses unarchived successfully");
+      expect(response.body).toHaveProperty(
+        "message",
+        "Courses unarchived successfully"
+      );
 
-      const unarchivedModules = await Module.find({ _id: { $in: moduleIds }, isArchived: false });
+      const unarchivedModules = await Module.find({
+        _id: { $in: moduleIds },
+        isArchived: false,
+      });
       expect(unarchivedModules).toHaveLength(2);
     });
 
-    test("fails with empty IDs array", async () => {
+    test("[TC-CM-033] fails with empty IDs array", async () => {
       const { token } = await createUserAndToken({ role: "admin" });
 
       const response = await request(app)
@@ -655,5 +696,4 @@ describe("Course Management API", () => {
       expect(response.body).toHaveProperty("error");
     });
   });
-
 });
