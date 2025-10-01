@@ -146,7 +146,15 @@
         }
         localStorage.setItem("token", data.token);
         showSuccess('login', 'Login successful! Redirecting...');
-        setTimeout(() => window.location.href = "/dashboard.html", 2000);
+        setTimeout(() => {
+          if (data.user && data.user.role === 'employer') {
+            window.location.href = "/employer-dashboard.html";
+          } else if (data.user && data.user.role === 'jobseeker') {
+            window.location.href = "/job-seeker-dashboard.html";
+          } else {
+            window.location.href = "/dashboard.html";
+          }
+        }, 2000);
       } else {
         showError('login', data.error || data.message || 'Login failed');
       }
