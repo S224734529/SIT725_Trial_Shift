@@ -131,37 +131,37 @@ Use http://localhost:3000/job-apply to apply for available jobs.
 ## User Authentication & Profile API
 
 ## Authentication
-  POST /api/users/register → Register a new user
+- POST /api/users/register → Register a new user
 
-  POST /api/users/login → Login user
+- POST /api/users/login → Login user
 
 ## Profile Management
-  GET /api/users/profile → Get user profile (authenticated)
+- GET /api/users/profile → Get user profile (authenticated)
 
-  PUT /api/users/profile → Update profile (requires admin approval)
+- PUT /api/users/profile → Update profile (requires admin approval)
     Body: { profile data } + profilePic file
 
-  DELETE /api/users/profile/picture → Delete profile picture (authenticated)
+- DELETE /api/users/profile/picture → Delete profile picture (authenticated)
 
-  POST /api/users/upload/profile-pic → Upload profile picture (authenticated)
+- POST /api/users/upload/profile-pic → Upload profile picture (authenticated)
     Body: file (image)
 
 ## Profile Update Requests API
-  GET /api/profile-update-requests → Get all pending profile update requests
+- GET /api/profile-update-requests → Get all pending profile update requests
 
-  PUT /api/profile-update-requests/:id/approve → Approve a profile update request
+- PUT /api/profile-update-requests/:id/approve → Approve a profile update request
 
-  PUT /api/profile-update-requests/:id/decline → Decline a profile update request
+- PUT /api/profile-update-requests/:id/decline → Decline a profile update request
     Body: { reason: "Optional reason for declining" }
 
 ## Admin User Management API
-  GET /api/admin/users → Get all users (admin only)
+- GET /api/admin/users → Get all users (admin only)
 
-  DELETE /api/admin/users/:id → Delete a user permanently (admin only)
+- DELETE /api/admin/users/:id → Delete a user permanently (admin only)
 
-  PUT /api/admin/users/:id/active → Toggle user active/inactive (admin only)
+- PUT /api/admin/users/:id/active → Toggle user active/inactive (admin only)
 
-  POST /api/admin/users/bulk-delete → Bulk delete users (admin only) 
+- POST /api/admin/users/bulk-delete → Bulk delete users (admin only) 
 
 ## Job Preferences API
 
@@ -231,3 +231,4 @@ Feel free to contribute to this project by submitting issues or pull requests. M
 ## License
 
 This project is licensed under the MIT License.
+
