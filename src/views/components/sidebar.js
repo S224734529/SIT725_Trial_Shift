@@ -46,7 +46,7 @@ function loadSidebar() {
     ];
   } else if (user.role === "employer") {
     menuItems = [
-      { name: "Dashboard", icon: "dashboard", url: "/dashboard.html" },
+      { name: "Dashboard", icon: "dashboard", url: "/employer-dashboard.html" },
       { name: "Job Management", icon: "work", url: "" },
       { name: "Notifications", icon: "notifications", url: "/notifications.html" },
       { name: "Courses", icon: "school", url: "/courses.html" },
@@ -54,7 +54,7 @@ function loadSidebar() {
     ];
   } else {
     menuItems = [
-      { name: "Dashboard", icon: "dashboard", url: "/dashboard.html" },
+      { name: "Dashboard", icon: "dashboard", url: "/job-seeker-dashboard.html" },
       { name: "Jobs", icon: "work", url: "/jobs.html" },
       { name: "Notifications", icon: "notifications", url: "/notifications.html" },
       { name: "Courses", icon: "school", url: "/courses.html" },
