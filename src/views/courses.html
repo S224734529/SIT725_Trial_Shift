@@ -226,13 +226,34 @@
 
       <section id="course-details" class="card block" style="display: none">
         <div class="card__left">
-          <button id="btnBackFromDetails" class="chip-btn">
+          <button id="btnBackFromDetails" class="chip-btn back-btn">
             <i class="material-icons tiny">arrow_back</i> Back
           </button>
-          <h4 id="detailsTitle" class="h-title"></h4>
-          <div id="detailsMeta" class="course-meta"></div>
-          <div id="detailsContent" class="soft-text"></div>
-          <div id="detailsAttachments" class="asset-gallery"></div>
+          
+          <!-- Small gap after back button -->
+          <div style="height: 20px;"></div>
+          
+          <!-- Course Title -->
+          <h4 id="detailsTitle" class="h-title course-title"></h4>
+          
+          <!-- Course Metadata -->
+          <div class="course-meta muted">
+            <div><strong>Category:</strong> <span id="detailsCategory"></span></div>
+            <div><strong>Role:</strong> <span id="detailsRole"></span></div>
+            <div><strong>Created:</strong> <span id="detailsCreated"></span></div>
+          </div>
+          
+          <!-- Course Content -->
+          <div class="content-section">
+            <h5 class="section-title">Course Content</h5>
+            <div id="detailsContent" class="course-content"></div>
+          </div>
+          
+          <!-- Attachments -->
+          <div class="content-section">
+            <h5 class="section-title">Attachments</h5>
+            <div id="detailsAttachments" class="asset-gallery"></div>
+          </div>
         </div>
         <div class="card__right">
           <img src="/img/learning.png" alt="learn" class="hero-illus" />

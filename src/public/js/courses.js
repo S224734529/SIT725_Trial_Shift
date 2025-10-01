@@ -735,7 +735,7 @@
     }
   }
 
-  // Render details
+  // Render details - UPDATED FUNCTION
   async function renderDetailsView(id){
     const vDetails = qs("#course-details");
     if (!vDetails) return;
@@ -749,42 +749,50 @@
       const m = await res.json();
 
       const elTitle = qs("#detailsTitle");
-      const elMeta = qs("#detailsMeta");
+      const elCategory = qs("#detailsCategory");
+      const elRole = qs("#detailsRole");
+      const elCreated = qs("#detailsCreated");
       const elContent = qs("#detailsContent");
       if (elContent) elContent.innerHTML = '';
       if (detailsAttachments) detailsAttachments.innerHTML = '';
 
       if (elTitle) elTitle.textContent = m.title || '';
 
-      if (elMeta) {
-        const metaItems = [];
-        if (m.category) metaItems.push(['Category', m.category]);
-        if (m.role) metaItems.push(['Role', m.role]);
-        if (m.createdAt) metaItems.push(['Created', new Date(m.createdAt).toLocaleString()]);
-        if (metaItems.length) {
-          elMeta.innerHTML = metaItems
-            .map(([label, value]) => `<div class="course-meta__item"><span class="course-meta__label">${escapeHtml(label)}:</span> <span class="course-meta__value">${escapeHtml(String(value))}</span></div>`)
-            .join('');
-          elMeta.style.display = '';
-        } else {
-          elMeta.innerHTML = '';
-          elMeta.style.display = 'none';
-        }
+      // Set individual metadata fields - UPDATED
+      if (elCategory) elCategory.textContent = m.category || 'N/A';
+      if (elRole) elRole.textContent = m.role || 'N/A';
+      if (elCreated) {
+        const createdDate = m.createdAt ? new Date(m.createdAt).toLocaleString() : 'N/A';
+        elCreated.textContent = createdDate;
       }
 
       if (elContent) {
         let html = '';
-        if (m.description) html += `<p>${escapeHtml(m.description)}</p>`;
         const textAssets = (m.assets || []).filter(a => a.type === 'text');
-        textAssets.forEach(asset => {
-          const safeTitle = escapeHtml((asset.title || '').trim());
-          const safeText = escapeHtml(asset.text || '');
-          if (safeTitle) {
-            html += `<div><strong>${safeTitle}</strong><div>${safeText}</div></div>`;
-          } else if (safeText) {
-            html += `<div>${safeText}</div>`;
+        
+        if (textAssets.length > 0) {
+          // Get the latest text asset content
+          const latestTextAsset = textAssets[textAssets.length - 1];
+          const contentText = latestTextAsset.text || '';
+          
+          // Clean up markdown formatting and display as plain text
+          const cleanContent = contentText
+            .replace(/^#+\s+/gm, '') // Remove markdown headers
+            .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+            .replace(/\*(.*?)\*/g, '$1') // Remove italic
+            .replace(/---+/g, '') // Remove horizontal rules
+            .trim();
+            
+          if (cleanContent) {
+            html += `<div class="course-content-text">${cleanContent}</div>`;
           }
-        });
+        }
+        
+        // Add description if available
+        if (m.description) {
+          html += `<div class="course-description">${escapeHtml(m.description)}</div>`;
+        }
+        
         elContent.innerHTML = html || '<div class="help-muted">No written content available.</div>';
       }
 
@@ -794,7 +802,7 @@
           detailsAttachments.innerHTML = '<div class="help-muted">No attachments available.</div>';
         } else {
           const gallery = attachments.map(asset => buildAttachmentCard(asset)).join('');
-          detailsAttachments.innerHTML = `<h5 class="h-title" style="margin-top: 12px;">Attachments</h5>${gallery}`;
+          detailsAttachments.innerHTML = gallery;
         }
       }
     } catch (e) {
@@ -868,4 +876,3 @@
   });
   document.addEventListener("DOMContentLoaded", loadAll);
 })();
-
