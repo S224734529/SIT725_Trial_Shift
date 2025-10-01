@@ -8,7 +8,7 @@
     "dev": "nodemon src/app.js",
     "test:api": "cross-env NODE_ENV=test jest --config testing/config/jest.config.js --runInBand",
     "test:e2e": "cross-env NODE_ENV=test playwright test -c testing/config/playwright.config.js",
-    "test": "npm run test:api",
+    "test": "jest",
     "test:all": "npm run test:api && npm run test:e2e",
     "report:e2e": "playwright show-report testing/reports/playwright"
   },

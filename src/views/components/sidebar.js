@@ -42,14 +42,14 @@ function loadSidebar() {
       { name: "Users", icon: "group", url: "/user.html" },
       { name: "Review Request", icon: "assignment", url: "/review-request.html" },
       { name: "Manage Jobs", icon: "settings", url: "/manage-jobs.html" }
-    ];
+      ];
   } else if (user.role === "employer") {
     menuItems = [
       { name: "Dashboard", icon: "dashboard", url: "/dashboard.html" },
-      { name: "Job Management", icon: "work", url: "/job-post.html" },
+      { name: "Job Management", icon: "work", url: "" },
       { name: "Notifications", icon: "notifications", url: "/notifications.html" },
       { name: "Courses", icon: "school", url: "/courses.html" },
-      { name: "Job Post", icon: "post_add", url: "/job-post.html" } 
+      { name: "Job Post", icon: "post_add", url: "/job-post.html" }
     ];
   } else {
     menuItems = [
@@ -58,7 +58,7 @@ function loadSidebar() {
       { name: "Notifications", icon: "notifications", url: "/notifications.html" },
       { name: "Courses", icon: "school", url: "/courses.html" },
       { name: "Job Preferences", icon: "thumb_up", url: "/job-preferences.html" },
-      { name: "Job Matches", icon: "merge_type", url: "/job-matches.html" },
+      { name: "Job Matches", icon: "merge_type", url: "/job-matches.html" }
     ];
   }
 
