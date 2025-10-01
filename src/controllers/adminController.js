@@ -19,10 +19,8 @@ exports.approveProfileUpdate = async (req, res) => {
       return res.status(404).json({ message: "Request not found or already processed." });
     }
 
-    // Apply updates to user profile
     await User.findByIdAndUpdate(request.user._id, { ...request.updates, pendingApproval: null });
 
-    // Update request status
     request.status = "approved";
     request.reviewedBy = req.user.id;
     request.reviewedAt = new Date();
@@ -42,13 +40,11 @@ exports.declineProfileUpdate = async (req, res) => {
       return res.status(404).json({ message: "Request not found or already processed." });
     }
 
-    // Remove pendingApproval from user and set lastDeclinedUpdate
     await User.findByIdAndUpdate(request.user._id, {
       $unset: { pendingApproval: "" },
       $set: { lastDeclinedUpdate: { date: new Date(), reason: request.reason || "" } }
     });
 
-    // Update request status
     request.status = "declined";
     request.reviewedBy = req.user.id;
     request.reviewedAt = new Date();
@@ -58,25 +54,5 @@ exports.declineProfileUpdate = async (req, res) => {
     res.json({ message: "Profile update declined." });
   } catch (err) {
     res.status(500).json({ message: "Failed to decline request. " + err.message });
-  }
-};
-
-// Get all profile update requests (history) for a user
-exports.getUserProfileUpdateHistory = async (req, res) => {
-  try {
-    const requests = await ProfileUpdateRequest.find({ user: req.params.userId }).sort({ requestedAt: -1 });
-    res.json(requests);
-  } catch (err) {
-    res.status(500).json({ message: "Failed to fetch history." });
-  }
-};
-
-// Clear decline flag for a user
-exports.clearDeclineFlag = async (req, res) => {
-  try {
-    await User.findByIdAndUpdate(req.user.id, { $unset: { lastDeclinedUpdate: "" } });
-    res.json({ message: "Decline flag cleared" });
-  } catch (err) {
-    res.status(500).json({ message: "Failed to clear decline flag." });
   }
 };
