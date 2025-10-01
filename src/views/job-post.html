@@ -1,4 +1,6 @@
-<!--<!DOCTYPE html>
+<!--
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -21,23 +23,41 @@
                   <label for="title">Job Title</label>
                 </div>
               </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select id="category" name="category" required>
-                    <option value="" disabled selected> Choose a category </option>
-                    <option value="kitchenhand" data-count="0"> Kitchen Hand <span class="badge" data-badge-caption=""> 0 jobs </span></option>
-                    <option value="accounting" data-count="0"> Accounting <span class="badge" data-badge-caption=""> 0 jobs </span></option>
-                    <option value="delivery" data-count="0"> Delivery <span class="badge" data-badge-caption=""> 0 jobs </span></option>
-                    <option value="waiter" data-count="0"> Waiter <span class="badge" data-badge-caption=""> 0 jobs </span></option>
-                    <option value="barista" data-count="0"> Barista <span class="badge" data-badge-caption=""> 0 jobs </span></option>
-                    <option value="pickpacker" data-count="0"> Pick Packer <span class="badge" data-badge-caption=""> 0 jobs </span></option>
-                  </select>
-                  <label for="category">Category</label>
+                <div class="row">
+                  <div class="input-field col s12">
+                    <select id="category" name="category" required>
+                      <option value="" disabled selected>Choose a category</option>
+                      <option value="kitchenhand" data-count="0">Kitchen Hand <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="cleaning" data-count="0">Cleaning <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="delivery" data-count="0">Delivery <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="waiter" data-count="0">Waiter <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="barista" data-count="0">Barista <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="pickpacker" data-count="0">Pick Packer <span class="badge" data-badge-caption="">0 jobs</span></option>
+                    </select>
+                    <label for="category">Category</label>
+                  </div>
                 </div>
-              </div>
               <div class="row">
                 <div class="input-field col s12">
-                  <input type="text" id="location" name="location" required>
+                  <select id="location" name="location" required>
+                    <option value="" disabled selected>Choose a location</option>
+                      <option value="Burwood">Burwood</option>
+                      <option value="Box Hill">Box Hill</option>
+                      <option value="Camberwell">Camberwell</option>
+                      <option value="Dandenong">Dandenong</option>
+                      <option value="Doncaster">Doncaster</option>
+                      <option value="Frankston">Frankston</option>
+                      <option value="Footscray">Footscray</option>
+                      <option value="Glen Waverley">Glen Waverley</option>
+                      <option value="Hawthorn">Hawthorn</option>
+                      <option value="Mitcham">Mitcham</option>
+                      <option value="Moorabbin">Moorabbin</option>
+                      <option value="Nunawading">Nunawading</option>
+                      <option value="Prahran">Prahran</option>
+                      <option value="Richmond">Richmond</option>
+                      <option value="St Kilda">St Kilda</option>
+                      <option value="Sunshine">Sunshine</option>
+                  </select>
                   <label for="location">Location</label>
                 </div>
               </div>
@@ -56,6 +76,18 @@
           </div>
         </div>
         <div id="successMessage" style="display: none; text-align: center; color: green;"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col s12">
+        <div class="card" id="jobManageCard">
+          <div class="card-content">
+            <h4>Your Posted Jobs</h4>
+            <ul class="collection" id="jobList">
+              <li class="collection-item">Loading jobs...</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
     <div class="row">
@@ -66,278 +98,410 @@
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Fetch and update category counts
-    function updateCategoryCounts() {
-      fetch('/api/categories/counts')
-        .then(response => {
-          if (!response.ok) throw new Error('Network response was not ok');
-          return response.json();
-        })
-        .then(data => {
-          console.log('Fetched category counts:', data);
-          const select = document.getElementById('category');
-          data.forEach(category => {
-            const option = select.querySelector(`option[value="${category.name}"]`);
-            if (option) {
-              const badge = option.querySelector('.badge');
-              if (badge) {
-                badge.textContent = ''; // Clear existing content
-                option.dataset.count = category.count;
-                badge.setAttribute('data-badge-caption', category.count > 0 ? `${category.count} jobs` : '');
-                console.log(`Updated ${category.name} to count: ${category.count}`);
-              }
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize all selects
+  const selects = document.querySelectorAll('select');
+  M.FormSelect.init(selects);
+
+  // Fetch and update category counts
+
+
+  function updateCategoryCounts() {
+  fetch('/api/categories/counts')
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      console.log('Fetched category counts:', data);
+      const select = document.getElementById('category');
+
+      // Update badge captions without reinitializing yet
+      data.forEach(category => {
+        const option = select.querySelector(`option[value="${category.name}"]`);
+        if (option) {
+          const badge = option.querySelector('.badge');
+          if (badge) {
+            option.dataset.count = category.count;
+            badge.setAttribute('data-badge-caption', category.count > 0 ? `${category.count} jobs` : '');
+            badge.textContent = ''; // Ensure badge text is correct
+            console.log(`Updated ${category.name} to count: ${category.count}`);
+          }
+        }
+      });
+
+      // Re-initialize the select AFTER updating all badges
+      const instance = M.FormSelect.getInstance(select);
+      if (instance) instance.destroy(); // Destroy old instance
+      M.FormSelect.init(select);       // Reinitialize
+    })
+    .catch(error => console.error('Error fetching category counts:', error));
+}
+
+  updateCategoryCounts(); // Initial load
+
+  // Fetch and display employer jobs
+  function loadEmployerJobs() {
+    fetch('/api/jobs/employer')
+      .then(response => response.json())
+      .then(jobs => {
+        const jobList = document.getElementById('jobList');
+        jobList.innerHTML = '';
+        if (!jobs || jobs.length === 0 || (jobs.message && jobs.message.includes('No jobs'))) {
+          jobList.innerHTML = '<li class="collection-item">No jobs posted.</li>';
+          return;
+        }
+        jobs.forEach(job => {
+          const li = document.createElement('li');
+          li.className = 'collection-item';
+          li.innerHTML = `
+            <div class="job-details">
+              ${job.title} - ${job.category.name || 'Unknown'} - ${job.location} (${job.shiftDetails})
+            </div>
+            <div class="job-actions">
+              <a href="/job-edit?id=${job._id}" class="btn-small">Edit</a>
+              <button class="btn-small red delete-job" data-id="${job._id}">Delete</button>
+            </div>
+          `;
+          jobList.appendChild(li);
+        });
+        document.querySelectorAll('.delete-job').forEach(button => {
+          button.addEventListener('click', function() {
+            const jobId = this.getAttribute('data-id');
+            if (confirm('Are you sure you want to delete this job?')) {
+              fetch(`/api/jobs/${jobId}`, { method: 'DELETE' })
+                .then(resp => {
+                  if (resp.ok) {
+                    loadEmployerJobs();
+                    M.toast({ html: 'Job deleted successfully!' });
+                  }
+                });
             }
           });
-          M.FormSelect.init(select); // Reinitialize Materialize select
-        })
-        .catch(error => console.error('Error fetching category counts:', error));
-    }
-    updateCategoryCounts(); // Initial load
-
-    // Handle form submission
-    const form = document.querySelector('#jobForm');
-    const card = document.querySelector('#jobFormCard');
-    const successMsg = document.querySelector('#successMessage');
-    if (!form || !card || !successMsg) console.error('Required elements not found');
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const data = Object.fromEntries(formData);
-      console.log('Form data:', data);
-      console.log('Sending fetch request to /api/jobs...');
-      fetch('/api/jobs', {
-        method: 'POST',
-        body: new URLSearchParams(data),
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        });
       })
-        .then(response => {
-          console.log('Fetch response status:', response.status);
-          console.log('Response headers:', response.headers);
-          if (response.status !== 201) {
-            throw new Error(`Expected 201, got ${response.status}`);
-          }
-          return response.json();
-        })
-        .then(data => {
-          console.log('Success:', data);
-          card.style.display = 'none';
-          successMsg.style.display = 'block';
-          successMsg.textContent = 'Job created successfully!';
-          setTimeout(() => {
-            card.style.display = 'block';
-            successMsg.style.display = 'none';
-            form.reset();
-            M.updateTextFields();
-            updateCategoryCounts(); // Refresh counts after submission
-          }, 3000);
-        })
-        .catch(error => console.error('Fetch error:', error));
-      this.querySelector('button[type="submit"]').disabled = true;
+      .catch(error => console.error('Error fetching jobs:', error));
+  }
+  loadEmployerJobs();
+
+  // Handle form submission
+  const form = document.querySelector('#jobForm');
+  const card = document.querySelector('#jobFormCard');
+  const successMsg = document.querySelector('#successMessage');
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    fetch('/api/jobs', {
+      method: 'POST',
+      body: new URLSearchParams(data),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(response => {
+      if (response.status !== 201) throw new Error(`Expected 201, got ${response.status}`);
+      return response.json();
+    })
+    .then(data => {
+      card.style.display = 'none';
+      successMsg.style.display = 'block';
+      successMsg.textContent = 'Job created successfully!';
       setTimeout(() => {
-        this.querySelector('button[type="submit"]').disabled = false;
+        card.style.display = 'block';
+        successMsg.style.display = 'none';
+        form.reset();
+        M.updateTextFields();
+        M.FormSelect.init(selects); // Reinitialize selects after reset
+        updateCategoryCounts();
+        loadEmployerJobs();
       }, 2000);
-    });
+    })
+    .catch(error => console.error('Error creating job:', error));
   });
+});
 </script>
 </body>
 </html> -->
 
-
-
-<!--
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Post a Job - Trial Shift</title>
-  <link rel="stylesheet" href="/css/job-post.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Post a Job - Trial Shift (Dashboard Style)</title>
+
+  <!-- Dashboard styles -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/job-post.css"> 
   <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
 </head>
-<body>
-  <div class="container">
-    <h1>Post a New Job</h1>
-    <div class="row">
-      <div class="col s12">
-        <div class="card" id="jobFormCard">
-          <div class="card-content">
-            <form action="/api/jobs" method="POST" class="col s12" id="jobForm">
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="title" name="title" required>
-                  <label for="title">Job Title</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select id="category" name="category" required>
-                    <option value="" disabled selected>Choose a category</option>
-                    <option value="kitchenhand" data-count="0">Kitchen Hand <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="cleaning" data-count="0">Cleaning <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="delivery" data-count="0">Delivery <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="waiter" data-count="0">Waiter <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="barista" data-count="0">Barista <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="pickpacker" data-count="0">Pick Packer <span class="badge" data-badge-caption="">0 jobs</span></option>
-                  </select>
-                  <label for="category">Category</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="location" name="location" required>
-                  <label for="location">Location</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <textarea id="shiftDetails" name="shiftDetails" class="materialize-textarea" required></textarea>
-                  <label for="shiftDetails">Shift Details</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <button type="submit" class="btn">Submit Job</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div id="successMessage" style="display: none; text-align: center; color: green;"></div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col s12">
-        <div class="card" id="jobManageCard">
-          <div class="card-content">
-            <h4>Your Posted Jobs</h4>
-            <ul class="collection" id="jobList">
-              <li class="collection-item">Loading jobs...</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col s12 center-align">
-        <a href="/dashboard.html">Back to Dashboard</a>
-      </div>
-    </div>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Fetch and update category counts
-      function updateCategoryCounts() {
-        fetch('/api/categories/counts')
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(data => {
-            console.log('Fetched category counts:', data);
-            const select = document.getElementById('category');
-            data.forEach(category => {
-              const option = select.querySelector(`option[value="${category.name}"]`);
-              if (option) {
-                const badge = option.querySelector('.badge');
-                if (badge) {
-                  badge.textContent = ''; // Clear existing content
-                  option.dataset.count = category.count;
-                  badge.setAttribute('data-badge-caption', category.count > 0 ? `${category.count} jobs` : '');
-                  console.log(`Updated ${category.name} to count: ${category.count}`);
-                }
-              }
-            });
-            M.FormSelect.init(select); // Reinitialize Materialize select
-          })
-          .catch(error => console.error('Error fetching category counts:', error));
-      }
-      updateCategoryCounts(); // Initial load
 
-      // Fetch and display employer jobs
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-right">
+      <i class="material-icons profile-icon" id="profileBtn">account_circle</i>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="main-content">
+    <h4 class="welcome">Post a New Job</h4>
+    <p id="welcomeMessage"></p>
+
+    <!-- Job form & job list from job-post.html -->
+    <div class="container">
+      <div class="row">
+        <div class="col s12">
+          <div class="card" id="jobFormCard">
+            <div class="card-content">
+              <form action="/api/jobs" method="POST" class="col s12" id="jobForm">
+                <div class="row">
+                  <div class="input-field col s12">
+                    <input type="text" id="title" name="title" required>
+                    <label for="title">Job Title</label>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="input-field col s12">
+                      <select id="category" name="category" required>
+                      <option value="" disabled selected>Choose a category</option>
+                      <option value="kitchenhand" data-count="0">Kitchen Hand <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="cleaning" data-count="0">Cleaning <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="delivery" data-count="0">Delivery <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="waiter" data-count="0">Waiter <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="barista" data-count="0">Barista <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      <option value="pickpacker" data-count="0">Pick Packer <span class="badge" data-badge-caption="">0 jobs</span></option>
+                      </select>
+                        <!--  <label for="category">Category</label>-->
+                  </div>
+                </div>
+
+                <div class="row">
+                <div class="input-field col s12">
+                  <select id="location" name="location" required>
+                    <option value="" disabled selected>Choose a location</option>
+                    <!-- Example Victorian cities/suburbs -->
+                      <option value="Burwood">Burwood</option>
+                      <option value="Box Hill">Box Hill</option>
+                      <option value="Camberwell">Camberwell</option>
+                      <option value="Dandenong">Dandenong</option>
+                      <option value="Doncaster">Doncaster</option>
+                      <option value="Frankston">Frankston</option>
+                      <option value="Footscray">Footscray</option>
+                      <option value="Glen Waverley">Glen Waverley</option>
+                      <option value="Hawthorn">Hawthorn</option>
+                      <option value="Mitcham">Mitcham</option>
+                      <option value="Moorabbin">Moorabbin</option>
+                      <option value="Nunawading">Nunawading</option>
+                      <option value="Prahran">Prahran</option>
+                      <option value="Richmond">Richmond</option>
+                      <option value="St Kilda">St Kilda</option>
+                      <option value="Sunshine">Sunshine</option>
+                    <!-- Can Add more as needed -->
+                  </select>
+                  <!--<label for="location">Location</label>-->
+                </div>
+              </div>
+                <div class="row">
+                  <div class="input-field col s12">
+                    <textarea id="shiftDetails" name="shiftDetails" class="materialize-textarea" required></textarea>
+                    <label for="shiftDetails">Shift Details</label>
+                  </div>
+                </div>
+                  <div class="row">
+                  <div class="col s12">
+                  <button type="submit" class="btn">Submit Job</button>
+                  </div>
+                  </div>
+              </form>
+            </div>
+          </div>
+          <div id="successMessage" style="display: none; text-align: center; color: green;"></div>
+        </div>
+      </div>
+
+      <!-- Manage Jobs -->
+      <div class="row">
+        <div class="col s12">
+          <div class="card" id="jobManageCard">
+            <div class="card-content">
+              <h4>Your Posted Jobs</h4>
+              <ul class="collection" id="jobList">
+                <li class="collection-item">Loading jobs...</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col s12 center-align">
+          <a href="/dashboard.html">Back to Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Sidebar component -->
+  <script src="/components/sidebar.js"></script>
+
+  <!-- Materialize JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+  <!-- Auth + Job form logic -->
+  <script>
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return null;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(jsonPayload);
+      } catch {
+        return null;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof loadSidebar === "function") {
+        loadSidebar();
+      }
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/";
+        return;
+      }
+
+      const user = parseJwt(token);
+      if (!user) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/";
+        return;
+      }
+
+      document.getElementById("welcomeMessage").textContent =
+        `Hello, ${user.name || user.username || "User"} (${user.role || "user"})`;
+
+      document.getElementById("profileBtn").addEventListener("click", () => {
+        window.location.href = "/profile.html";
+      });
+
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/";
+      });
+
+      // Materialize init
+      const elems = document.querySelectorAll('select');
+      M.FormSelect.init(elems);
+
+      // Load categories count
+      function updateCategoryCounts() {
+  fetch('/api/categories/counts')
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      console.log('Fetched category counts:', data);
+      const select = document.getElementById('category');
+
+      // Update badge captions without reinitializing yet
+      data.forEach(category => {
+        const option = select.querySelector(`option[value="${category.name}"]`);
+        if (option) {
+          const badge = option.querySelector('.badge');
+          if (badge) {
+            option.dataset.count = category.count;
+            badge.setAttribute('data-badge-caption', category.count > 0 ? `${category.count} jobs` : '');
+            badge.textContent = ''; // Ensure badge text is correct
+            console.log(`Updated ${category.name} to count: ${category.count}`);
+          }
+        }
+      });
+
+      // Re-initialize the select AFTER updating all badges
+      const instance = M.FormSelect.getInstance(select);
+      if (instance) instance.destroy(); // Destroy old instance
+      M.FormSelect.init(select);       // Reinitialize
+    })
+    .catch(error => console.error('Error fetching category counts:', error));
+}
+
+  updateCategoryCounts(); // Initial load
+
+      // Load jobs
       function loadEmployerJobs() {
         fetch('/api/jobs/employer')
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
+          .then(res => res.json())
           .then(jobs => {
             const jobList = document.getElementById('jobList');
-            jobList.innerHTML = ''; // Clear loading message
-            if (jobs.length === 0 || (jobs.message && jobs.message.includes('No jobs'))) {
+            jobList.innerHTML = '';
+            if (!jobs.length) {
               jobList.innerHTML = '<li class="collection-item">No jobs posted.</li>';
-            } else {
-              jobs.forEach(job => {
-                const li = document.createElement('li');
-                li.className = 'collection-item';
-                li.innerHTML = `
-                  <div class="job-details">
-                    ${job.title} - ${job.location} (${job.shiftDetails})
-                  </div>
-                  <div class="job-actions">
-                    <a href="/job-edit?id=${job._id}" class="btn-small">Edit</a>
-                    <button class="btn-small red delete-job" data-id="${job._id}">Delete</button>
-                  </div>
-                `;
-                jobList.appendChild(li);
-              });
-              // Add delete event listeners
-              document.querySelectorAll('.delete-job').forEach(button => {
-                button.addEventListener('click', function() {
-                  const jobId = this.getAttribute('data-id');
-                  if (confirm('Are you sure you want to delete this job?')) {
-                    fetch(`/api/jobs/${jobId}`, {
-                      method: 'DELETE'
-                    })
-                      .then(response => {
-                        if (response.ok) {
-                          loadEmployerJobs(); // Reload jobs after deletion
-                          M.toast({ html: 'Job deleted successfully!' });
-                        } else {
-                          throw new Error('Failed to delete job');
-                        }
-                      })
-                      .catch(error => console.error('Error deleting job:', error));
-                  }
-                });
-              });
+              return;
             }
+            jobs.forEach(job => {
+              const li = document.createElement('li');
+              li.className = 'collection-item';
+              li.innerHTML = `
+                <div class="job-details">${job.title} - ${job.category?.name || 'Unknown'} - ${job.location} (${job.shiftDetails})</div>
+                <div class="job-actions">
+                  <a href="/job-edit?id=${job._id}" class="btn-small">Edit</a>
+                  <button class="btn-small red delete-job" data-id="${job._id}">Delete</button>
+                </div>
+              `;
+              jobList.appendChild(li);
+            });
+            document.querySelectorAll('.delete-job').forEach(btn => {
+              btn.addEventListener('click', function() {
+                const jobId = this.dataset.id;
+                if (confirm('Are you sure you want to delete this job?')) {
+                  fetch(`/api/jobs/${jobId}`, { method: 'DELETE' })
+                    .then(res => {
+                      if (res.ok) {
+                        loadEmployerJobs();
+                        M.toast({ html: 'Job deleted successfully!' });
+                      }
+                    })
+                    .catch(err => console.error('Error deleting job:', err));
+                }
+              });
+            });
           })
-          .catch(error => console.error('Error fetching jobs:', error));
+          .catch(err => console.error('Error fetching jobs:', err));
       }
-      loadEmployerJobs(); // Initial load
+      loadEmployerJobs();
 
-      // Handle form submission
-      const form = document.querySelector('#jobForm');
-      const card = document.querySelector('#jobFormCard');
-      const successMsg = document.querySelector('#successMessage');
-      if (!form || !card || !successMsg) console.error('Required elements not found');
-      form.addEventListener('submit', function(e) {
+      // Form submission
+      const form = document.getElementById("jobForm");
+      const card = document.getElementById("jobFormCard");
+      const successMsg = document.getElementById("successMessage");
+
+      form.addEventListener("submit", function(e) {
         e.preventDefault();
         const formData = new FormData(form);
         const data = Object.fromEntries(formData);
-        console.log('Form data:', data);
-        console.log('Sending fetch request to /api/jobs...');
         fetch('/api/jobs', {
           method: 'POST',
-          body: new URLSearchParams(data),
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams(data)
         })
-          .then(response => {
-            console.log('Fetch response status:', response.status);
-            console.log('Response headers:', response.headers);
-            if (response.status !== 201) {
-              throw new Error(`Expected 201, got ${response.status}`);
-            }
-            return response.json();
+          .then(res => {
+            if (res.status !== 201) throw new Error("Failed to create job");
+            return res.json();
           })
-          .then(data => {
-            console.log('Success:', data);
+          .then(() => {
             card.style.display = 'none';
             successMsg.style.display = 'block';
             successMsg.textContent = 'Job created successfully!';
@@ -346,660 +510,13 @@
               successMsg.style.display = 'none';
               form.reset();
               M.updateTextFields();
-              updateCategoryCounts(); // Refresh counts after submission
-              loadEmployerJobs(); // Refresh job list after submission
+              updateCategoryCounts();
+              loadEmployerJobs();
             }, 3000);
           })
-          .catch(error => console.error('Fetch error:', error));
-        this.querySelector('button[type="submit"]').disabled = true;
-        setTimeout(() => {
-          this.querySelector('button[type="submit"]').disabled = false;
-        }, 2000);
+          .catch(err => console.error('Error submitting job:', err));
       });
     });
   </script>
 </body>
-</html> -->
-
-
-<!--
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Post a Job - Trial Shift</title>
-  <link rel="stylesheet" href="/css/job-post.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
-</head>
-<body>
-  <div class="container">
-    <h1>Post a New Job</h1>
-    <div class="row">
-      <div class="col s12">
-        <div class="card" id="jobFormCard">
-          <div class="card-content">
-            <form action="/api/jobs" method="POST" class="col s12" id="jobForm">
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="title" name="title" required>
-                  <label for="title">Job Title</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select id="category" name="category" required>
-                    <option value="" disabled selected>Choose a category</option>
-                    <option value="kitchenhand" data-count="0">Kitchen Hand <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="cleaning" data-count="0">Cleaning <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="delivery" data-count="0">Delivery <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="waiter" data-count="0">Waiter <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="barista" data-count="0">Barista <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="pickpacker" data-count="0">Pick Packer <span class="badge" data-badge-caption="">0 jobs</span></option>
-                  </select>
-                  <label for="category">Category</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="location" name="location" required>
-                  <label for="location">Location</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <textarea id="shiftDetails" name="shiftDetails" class="materialize-textarea" required></textarea>
-                  <label for="shiftDetails">Shift Details</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <button type="submit" class="btn">Submit Job</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div id="successMessage" style="display: none; text-align: center; color: green;"></div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col s12">
-        <div class="card" id="jobManageCard">
-          <div class="card-content">
-            <h4>Your Posted Jobs</h4>
-            <ul class="collection" id="jobList">
-              <li class="collection-item">Loading jobs...</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col s12 center-align">
-        <a href="/dashboard.html">Back to Dashboard</a>
-      </div>
-    </div>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Fetch and update category counts
-      function updateCategoryCounts() {
-        fetch('/api/categories/counts')
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(data => {
-            console.log('Fetched category counts:', data);
-            const select = document.getElementById('category');
-            data.forEach(category => {
-              const option = select.querySelector(`option[value="${category.name}"]`);
-              if (option) {
-                const badge = option.querySelector('.badge');
-                if (badge) {
-                  badge.textContent = ''; // Clear existing content
-                  option.dataset.count = category.count;
-                  badge.setAttribute('data-badge-caption', category.count > 0 ? `${category.count} jobs` : '');
-                  console.log(`Updated ${category.name} to count: ${category.count}`);
-                }
-              }
-            });
-            M.FormSelect.init(select); // Reinitialize Materialize select
-          })
-          .catch(error => console.error('Error fetching category counts:', error));
-      }
-      updateCategoryCounts(); // Initial load
-
-      // Fetch and display employer jobs
-      function loadEmployerJobs() {
-        fetch('/api/jobs/employer')
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(jobs => {
-            const jobList = document.getElementById('jobList');
-            jobList.innerHTML = ''; // Clear loading message
-            if (jobs.length === 0 || (jobs.message && jobs.message.includes('No jobs'))) {
-              jobList.innerHTML = '<li class="collection-item">No jobs posted.</li>';
-            } else {
-              jobs.forEach(job => {
-                const li = document.createElement('li');
-                li.className = 'collection-item';
-                li.innerHTML = `
-                  <div class="job-details">
-                    ${job.title} - ${job.category.name || 'Unknown'} - ${job.location} (${job.shiftDetails})
-                  </div>
-                  <div class="job-actions">
-                    <a href="/job-edit?id=${job._id}" class="btn-small">Edit</a>
-                    <button class="btn-small red delete-job" data-id="${job._id}">Delete</button>
-                  </div>
-                `;
-                jobList.appendChild(li);
-              });
-              // Add delete event listeners
-              document.querySelectorAll('.delete-job').forEach(button => {
-                button.addEventListener('click', function() {
-                  const jobId = this.getAttribute('data-id');
-                  if (confirm('Are you sure you want to delete this job?')) {
-                    fetch(`/api/jobs/${jobId}`, {
-                      method: 'DELETE'
-                    })
-                      .then(response => {
-                        if (response.ok) {
-                          loadEmployerJobs(); // Reload jobs after deletion
-                          M.toast({ html: 'Job deleted successfully!' });
-                        } else {
-                          throw new Error('Failed to delete job');
-                        }
-                      })
-                      .catch(error => console.error('Error deleting job:', error));
-                  }
-                });
-              });
-            }
-          })
-          .catch(error => console.error('Error fetching jobs:', error));
-      }
-      loadEmployerJobs(); // Initial load
-
-      // Handle form submission
-      const form = document.querySelector('#jobForm');
-      const card = document.querySelector('#jobFormCard');
-      const successMsg = document.querySelector('#successMessage');
-      if (!form || !card || !successMsg) console.error('Required elements not found');
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-        console.log('Form data:', data);
-        console.log('Sending fetch request to /api/jobs...');
-        fetch('/api/jobs', {
-          method: 'POST',
-          body: new URLSearchParams(data),
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        })
-          .then(response => {
-            console.log('Fetch response status:', response.status);
-            console.log('Response headers:', response.headers);
-            if (response.status !== 201) {
-              throw new Error(`Expected 201, got ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            console.log('Success:', data);
-            card.style.display = 'none';
-            successMsg.style.display = 'block';
-            successMsg.textContent = 'Job created successfully!';
-            setTimeout(() => {
-              card.style.display = 'block';
-              successMsg.style.display = 'none';
-              form.reset();
-              M.updateTextFields();
-              updateCategoryCounts(); // Refresh counts after submission
-              loadEmployerJobs(); // Refresh job list after submission
-            }, 3000);
-          })
-          .catch(error => console.error('Fetch error:', error));
-        this.querySelector('button[type="submit"]').disabled = true;
-        setTimeout(() => {
-          this.querySelector('button[type="submit"]').disabled = false;
-        }, 2000);
-      });
-    });
-  </script>
-</body>
-</html> -->
-
-<!--
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Post a Job - Trial Shift</title>
-  <link rel="stylesheet" href="/css/job-post.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
-</head>
-<body>
-  <div class="container">
-    <h1>Post a New Job</h1>
-    <div class="row">
-      <div class="col s12">
-        <div class="card" id="jobFormCard">
-          <div class="card-content">
-            <form action="/api/jobs" method="POST" class="col s12" id="jobForm">
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="title" name="title" required>
-                  <label for="title">Job Title</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select id="category" name="category" required>
-                    <option value="" disabled selected>Choose a category</option>
-                    <option value="kitchenhand" data-count="0">Kitchen Hand <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="cleaning" data-count="0">Cleaning <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="delivery" data-count="0">Delivery <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="waiter" data-count="0">Waiter <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="barista" data-count="0">Barista <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="pickpacker" data-count="0">Pick Packer <span class="badge" data-badge-caption="">0 jobs</span></option>
-                  </select>
-                  <label for="category">Category</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="location" name="location" required>
-                  <label for="location">Location</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <textarea id="shiftDetails" name="shiftDetails" class="materialize-textarea" required></textarea>
-                  <label for="shiftDetails">Shift Details</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <button type="submit" class="btn">Submit Job</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div id="successMessage" style="display: none; text-align: center; color: green;"></div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col s12">
-        <div class="card" id="jobManageCard">
-          <div class="card-content">
-            <h4>Your Posted Jobs</h4>
-            <ul class="collection" id="jobList">
-              <li class="collection-item">Loading jobs...</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col s12 center-align">
-        <a href="/dashboard.html">Back to Dashboard</a>
-      </div>
-    </div>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Fetch and update category counts
-      function updateCategoryCounts() {
-        fetch('/api/categories/counts')
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(data => {
-            console.log('Fetched category counts:', data);
-            const select = document.getElementById('category');
-            data.forEach(category => {
-              const option = select.querySelector(`option[value="${category.name}"]`);
-              if (option) {
-                const badge = option.querySelector('.badge');
-                if (badge) {
-                  badge.textContent = ''; // Clear existing content
-                  option.dataset.count = category.count;
-                  badge.setAttribute('data-badge-caption', category.count > 0 ? `${category.count} jobs` : '');
-                  console.log(`Updated ${category.name} to count: ${category.count}`);
-                }
-              }
-            });
-            M.FormSelect.init(select); // Reinitialize Materialize select
-          })
-          .catch(error => console.error('Error fetching category counts:', error));
-      }
-      updateCategoryCounts(); // Initial load
-
-      // Fetch and display employer jobs
-      function loadEmployerJobs() {
-        fetch('/api/jobs/employer')
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(jobs => {
-            const jobList = document.getElementById('jobList');
-            jobList.innerHTML = ''; // Clear loading message
-            if (jobs.length === 0 || (jobs.message && jobs.message.includes('No jobs'))) {
-              jobList.innerHTML = '<li class="collection-item">No jobs posted.</li>';
-            } else {
-              jobs.forEach(job => {
-                const li = document.createElement('li');
-                li.className = 'collection-item';
-                li.innerHTML = `
-                  <div class="job-details">
-                    ${job.title} - ${job.category.name || 'Unknown'} - ${job.location} (${job.shiftDetails})
-                  </div>
-                  <div class="job-actions">
-                    <a href="/job-edit?id=${job._id}" class="btn-small">Edit</a>
-                    <button class="btn-small red delete-job" data-id="${job._id}">Delete</button>
-                  </div>
-                `;
-                jobList.appendChild(li);
-              });
-              // Add delete event listeners
-              document.querySelectorAll('.delete-job').forEach(button => {
-                button.addEventListener('click', function() {
-                  const jobId = this.getAttribute('data-id');
-                  if (confirm('Are you sure you want to delete this job?')) {
-                    fetch(`/api/jobs/${jobId}`, {
-                      method: 'DELETE'
-                    })
-                      .then(response => {
-                        if (response.ok) {
-                          loadEmployerJobs(); // Reload jobs after deletion
-                          M.toast({ html: 'Job deleted successfully!' });
-                        } else {
-                          throw new Error('Failed to delete job');
-                        }
-                      })
-                      .catch(error => console.error('Error deleting job:', error));
-                  }
-                });
-              });
-            }
-          })
-          .catch(error => console.error('Error fetching jobs:', error));
-      }
-      loadEmployerJobs(); // Initial load
-
-      // Handle form submission
-      const form = document.querySelector('#jobForm');
-      const card = document.querySelector('#jobFormCard');
-      const successMsg = document.querySelector('#successMessage');
-      if (!form || !card || !successMsg) console.error('Required elements not found');
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-        console.log('Form data:', data);
-        console.log('Sending fetch request to /api/jobs...');
-        fetch('/api/jobs', {
-          method: 'POST',
-          body: new URLSearchParams(data),
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        })
-          .then(response => {
-            console.log('Fetch response status:', response.status);
-            console.log('Response headers:', response.headers);
-            if (response.status !== 201) {
-              throw new Error(`Expected 201, got ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            console.log('Success:', data);
-            card.style.display = 'none';
-            successMsg.style.display = 'block';
-            successMsg.textContent = 'Job created successfully!';
-            setTimeout(() => {
-              card.style.display = 'block';
-              successMsg.style.display = 'none';
-              form.reset();
-              M.updateTextFields();
-              updateCategoryCounts(); // Refresh counts after submission
-              loadEmployerJobs(); // Refresh job list after submission
-            }, 3000);
-          })
-          .catch(error => console.error('Fetch error:', error));
-        this.querySelector('button[type="submit"]').disabled = true;
-        setTimeout(() => {
-          this.querySelector('button[type="submit"]').disabled = false;
-        }, 2000);
-      });
-    });
-  </script>
-</body>
-</html> -->
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Post a Job - Trial Shift</title>
-  <link rel="stylesheet" href="/css/job-post.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
-</head>
-<body>
-  <div class="container">
-    <h1>Post a New Job</h1>
-    <div class="row">
-      <div class="col s12">
-        <div class="card" id="jobFormCard">
-          <div class="card-content">
-            <form action="/api/jobs" method="POST" class="col s12" id="jobForm">
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="title" name="title" required>
-                  <label for="title">Job Title</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <select id="category" name="category" required>
-                    <option value="" disabled selected>Choose a category</option>
-                    <option value="kitchenhand" data-count="0">Kitchen Hand <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="cleaning" data-count="0">Cleaning <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="delivery" data-count="0">Delivery <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="waiter" data-count="0">Waiter <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="barista" data-count="0">Barista <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="pickpacker" data-count="0">Pick Packer <span class="badge" data-badge-caption="">0 jobs</span></option>
-                  </select>
-                  <label for="category">Category</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="location" name="location" required>
-                  <label for="location">Location</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <textarea id="shiftDetails" name="shiftDetails" class="materialize-textarea" required></textarea>
-                  <label for="shiftDetails">Shift Details</label>
-                </div>
-              </div>
-              <div class="row">
-                <div class="input-field col s12">
-                  <button type="submit" class="btn">Submit Job</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-        <div id="successMessage" style="display: none; text-align: center; color: green;"></div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col s12">
-        <div class="card" id="jobManageCard">
-          <div class="card-content">
-            <h4>Your Posted Jobs</h4>
-            <ul class="collection" id="jobList">
-              <li class="collection-item">Loading jobs...</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col s12 center-align">
-        <a href="/dashboard.html">Back to Dashboard</a>
-      </div>
-    </div>
-  </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Fetch and update category counts
-      function updateCategoryCounts() {
-        fetch('/api/categories/counts')
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(data => {
-            console.log('Fetched category counts:', data);
-            const select = document.getElementById('category');
-            data.forEach(category => {
-              const option = select.querySelector(`option[value="${category.name}"]`);
-              if (option) {
-                const badge = option.querySelector('.badge');
-                if (badge) {
-                  badge.textContent = ''; // Clear existing content
-                  option.dataset.count = category.count;
-                  badge.setAttribute('data-badge-caption', category.count > 0 ? `${category.count} jobs` : '');
-                  console.log(`Updated ${category.name} to count: ${category.count}`);
-                }
-              }
-            });
-            M.FormSelect.init(select); // Reinitialize Materialize select
-          })
-          .catch(error => console.error('Error fetching category counts:', error));
-      }
-      updateCategoryCounts(); // Initial load
-
-      // Fetch and display employer jobs
-      function loadEmployerJobs() {
-        fetch('/api/jobs/employer')
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(jobs => {
-            const jobList = document.getElementById('jobList');
-            jobList.innerHTML = ''; // Clear loading message
-            if (jobs.length === 0 || (jobs.message && jobs.message.includes('No jobs'))) {
-              jobList.innerHTML = '<li class="collection-item">No jobs posted.</li>';
-            } else {
-              jobs.forEach(job => {
-                const li = document.createElement('li');
-                li.className = 'collection-item';
-                li.innerHTML = `
-                  <div class="job-details">
-                    ${job.title} - ${job.category.name || 'Unknown'} - ${job.location} (${job.shiftDetails})
-                  </div>
-                  <div class="job-actions">
-                    <a href="/job-edit?id=${job._id}" class="btn-small">Edit</a>
-                    <button class="btn-small red delete-job" data-id="${job._id}">Delete</button>
-                  </div>
-                `;
-                jobList.appendChild(li);
-              });
-              // Add delete event listeners
-              document.querySelectorAll('.delete-job').forEach(button => {
-                button.addEventListener('click', function() {
-                  const jobId = this.getAttribute('data-id');
-                  if (confirm('Are you sure you want to delete this job?')) {
-                    fetch(`/api/jobs/${jobId}`, {
-                      method: 'DELETE'
-                    })
-                      .then(response => {
-                        if (response.ok) {
-                          loadEmployerJobs(); // Reload jobs after deletion
-                          M.toast({ html: 'Job deleted successfully!' });
-                        } else {
-                          throw new Error('Failed to delete job');
-                        }
-                      })
-                      .catch(error => console.error('Error deleting job:', error));
-                  }
-                });
-              });
-            }
-          })
-          .catch(error => console.error('Error fetching jobs:', error));
-      }
-      loadEmployerJobs(); // Initial load
-
-      // Handle form submission
-      const form = document.querySelector('#jobForm');
-      const card = document.querySelector('#jobFormCard');
-      const successMsg = document.querySelector('#successMessage');
-      if (!form || !card || !successMsg) console.error('Required elements not found');
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
-        console.log('Form data:', data);
-        console.log('Sending fetch request to /api/jobs...');
-        fetch('/api/jobs', {
-          method: 'POST',
-          body: new URLSearchParams(data),
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
-        })
-          .then(response => {
-            console.log('Fetch response status:', response.status);
-            console.log('Response headers:', response.headers);
-            if (response.status !== 201) {
-              throw new Error(`Expected 201, got ${response.status}`);
-            }
-            return response.json();
-          })
-          .then(data => {
-            console.log('Success:', data);
-            card.style.display = 'none';
-            successMsg.style.display = 'block';
-            successMsg.textContent = 'Job created successfully!';
-            setTimeout(() => {
-              card.style.display = 'block';
-              successMsg.style.display = 'none';
-              form.reset();
-              M.updateTextFields();
-              updateCategoryCounts(); // Refresh counts after submission
-              loadEmployerJobs(); // Refresh job list after submission
-            }, 3000);
-          })
-          .catch(error => console.error('Fetch error:', error));
-        this.querySelector('button[type="submit"]').disabled = true;
-        setTimeout(() => {
-          this.querySelector('button[type="submit"]').disabled = false;
-        }, 2000);
-      });
-    });
-  </script>
-</body>
-</html> 
+</html>

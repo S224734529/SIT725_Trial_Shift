@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Category - Trial Shift</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/category-manage.css">
+</head>
+<body>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-right">
+      <i class="material-icons profile-icon" id="profileBtn">account_circle</i>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <h4>Edit Category</h4>
+    <div class="container">
+      <div class="row">
+        <div class="col s12">
+          <div class="card">
+            <div class="card-content">
+              <form id="editCategoryForm" class="col s12">
+                <input type="hidden" id="categoryId" name="id">
+                <div class="row">
+                  <div class="input-field col s12">
+                    <input type="text" id="categoryName" name="name" required>
+                    <label for="categoryName">Category Name</label>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="input-field col s12">
+                    <textarea id="categoryDescription" name="description" class="materialize-textarea"></textarea>
+                    <label for="categoryDescription">Description (Optional)</label>
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col s12">
+                    <button type="submit" class="btn">Update Category</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+            <!-- Success message aligned below card content -->
+            <div id="editSuccess" 
+                 class="green-text center-align" 
+                 style="display: none; padding: 10px; font-weight: 500;">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="/components/sidebar.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof loadSidebar === 'function') loadSidebar();
+
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/';
+
+    // Try to decode token (optional, but don't force role check here)
+    try {
+      const user = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      console.log("Decoded user:", user);
+    } catch (e) {
+      console.error('Invalid token:', e);
+      window.location.href = '/';
+    }
+
+    const editForm = document.getElementById('editCategoryForm');
+    const editSuccess = document.getElementById('editSuccess');
+
+    // Get category ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const categoryId = urlParams.get('id');
+    if (!categoryId) {
+      alert('No category selected for editing.');
+      window.location.href = '/category-manage.html';
+      return;
+    }
+    document.getElementById('categoryId').value = categoryId;
+
+    // Fetch category data
+    fetch(`/api/categories/${categoryId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error('Category not found');
+        return res.json();
+      })
+      .then(category => {
+        document.getElementById('categoryName').value = category.name || '';
+        document.getElementById('categoryDescription').value = category.description || '';
+        M.updateTextFields();
+      })
+      .catch(err => console.error('Error fetching category:', err));
+
+    // Update category
+    editForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = {
+        name: editForm.name.value,
+        description: editForm.description.value
+      };
+      fetch(`/api/categories/${categoryId}`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(data)
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to update category');
+          editSuccess.textContent = 'Category updated successfully!';
+          editSuccess.style.display = 'block';
+          setTimeout(() => { 
+            editSuccess.style.display = 'none'; 
+            window.location.href = '/category-manage.html'; 
+          }, 2000);
+        })
+        .catch(err => console.error('Update error:', err));
+    });
+
+    // Logout and profile logic
+    document.getElementById('profileBtn').addEventListener('click', () => window.location.href = '/profile.html');
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      window.location.href = '/';
+    });
+  });
+  </script>
+</body>
+</html>
