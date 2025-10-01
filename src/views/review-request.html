@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Profile Update Review Requests</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/admin-approval.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar"></div>
+
+    <div class="main-content" style="max-width: 700px; margin: 40px auto;">
+        <h2>Profile Update Review Requests</h2>
+        <div id="requestsList"></div>
+    </div>
+    <!-- Modal for feedback -->
+    <div id="feedbackModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <span id="modalMessage"></span>
+            <button onclick="closeModal()" class="modal-close-btn">OK</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <span id="confirmMessage"></span>
+            <div style="margin-top:18px;">
+                <button onclick="confirmAction()" class="modal-close-btn" style="background:#43a047;">Yes</button>
+                <button onclick="closeConfirmModal()" class="modal-close-btn" style="background:#e53935;">No</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decline Reason Modal -->
+    <div id="declineModal" class="modal-overlay" style="display:none;">
+      <div class="modal-content">
+        <span id="declineMessage">Please enter a reason for declining (optional):</span>
+        <textarea id="declineReasonInput" rows="3" style="width:100%;margin-top:10px;"></textarea>
+        <div style="margin-top:18px;">
+          <button onclick="submitDeclineReason()" class="modal-close-btn" style="background:#e53935;">Decline</button>
+          <button onclick="closeDeclineModal()" class="modal-close-btn" style="background:#888;">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/components/sidebar.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadSidebar();
+
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/";
+                return;
+            }
+
+            const user = JSON.parse(atob(token.split('.')[1]));
+            document.getElementById("welcomeMessage").textContent =
+                `Hello, ${user.name} (${user.role})`;
+
+            // Navigate to profile page
+            document.getElementById("profileBtn").addEventListener("click", () => {
+                window.location.href = "profile.html";
+            });
+
+            // Logout
+            document.getElementById("logoutBtn").addEventListener("click", () => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                window.location.href = "/";
+            });
+        });
+    </script>
+    <script>
+        async function fetchRequests() {
+            const res = await fetch('/api/admin/profile-requests', {
+                headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+            });
+            const requests = await res.json();
+            renderRequests(requests);
+        }
+
+        function renderRequests(requests) {
+            const list = document.getElementById('requestsList');
+            if (!requests.length) {
+                list.innerHTML = "<p>No pending requests.</p>";
+                return;
+            }
+            list.innerHTML = requests.map(req => `
+        <div class="request-card" id="request-${req._id}">
+          <div class="user-info">
+            <span class="field-label">User:</span> ${req.user?.name || "Unknown"} (${req.user?.email || ""})
+          </div>
+          <div class="request-status">
+            Requested at: ${new Date(req.requestedAt).toLocaleString()}
+          </div>
+          <div>
+            <span class="field-label">Name:</span> ${req.updates.name || "-"}
+          </div>
+          <div>
+            <span class="field-label">State:</span> ${req.updates.state || "-"}
+          </div>
+          <div>
+            <span class="field-label">Profile Pic:</span>
+            ${req.updates.profilePic ? `<img src="${req.updates.profilePic}" alt="Profile Pic" style="width:40px;height:40px;border-radius:50%;">` : "-"}
+          </div>
+          <div class="request-actions">
+            <button class="approve-btn" onclick="approveRequest('${req._id}')">Approve</button>
+            <button class="decline-btn" onclick="declineRequest('${req._id}')">Decline</button>
+          </div>
+        </div>
+      `).join('');
+        }
+
+        function showModal(message) {
+          document.getElementById('modalMessage').textContent = message;
+          document.getElementById('feedbackModal').style.display = 'flex';
+        }
+        function closeModal() {
+          document.getElementById('feedbackModal').style.display = 'none';
+        }
+
+        let confirmCallback = null;
+
+        function showConfirm(message, callback) {
+          document.getElementById('confirmMessage').textContent = message;
+          document.getElementById('confirmModal').style.display = 'flex';
+          confirmCallback = callback;
+        }
+
+        function closeConfirmModal() {
+          document.getElementById('confirmModal').style.display = 'none';
+          confirmCallback = null;
+        }
+
+        function confirmAction() {
+          if (confirmCallback) confirmCallback();
+          closeConfirmModal();
+        }
+
+        async function approveRequest(id) {
+          showConfirm("Approve this profile update?", async function() {
+            const res = await fetch(`/api/admin/profile-requests/${id}/approve`, {
+              method: "PUT",
+              headers: { Authorization: "Bearer " + localStorage.getItem("token") }
+            });
+            if (res.ok) {
+              document.getElementById(`request-${id}`).remove();
+              showModal("Profile update approved and applied.");
+            } else {
+              showModal("Failed to approve.");
+            }
+          });
+        }
+
+        let declineRequestId = null;
+
+        function showDeclineModal(requestId) {
+          declineRequestId = requestId;
+          document.getElementById('declineReasonInput').value = "";
+          document.getElementById('declineModal').style.display = 'flex';
+        }
+
+        async function submitDeclineReason() {
+          const reason = document.getElementById('declineReasonInput').value;
+          closeDeclineModal();
+          showConfirm("Decline this profile update?", async function() {
+            const res = await fetch(`/api/admin/profile-requests/${declineRequestId}/decline`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: "Bearer " + localStorage.getItem("token")
+              },
+              body: JSON.stringify({ reason })
+            });
+            if (res.ok) {
+              document.getElementById(`request-${declineRequestId}`).remove();
+              showModal("Profile update declined.");
+            } else {
+              showModal("Failed to decline.");
+            }
+            declineRequestId = null;
+          });
+        }
+
+        function declineRequest(id) {
+          showDeclineModal(id);
+        }
+
+         function closeDeclineModal() {
+          document.getElementById('declineModal').style.display = 'none';
+        }
+
+        fetchRequests();
+    </script>
+</body>
+
+</html>

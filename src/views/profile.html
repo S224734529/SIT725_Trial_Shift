@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User Profile</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/profile.css">
+</head>
+<body>
+  <!-- Sidebar from shared component -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Main -->
+  <div class="main">
+    <section class="profile-shell">
+      <h1 class="headline"><i class="material-icons">account_circle</i> User Profile</h1>
+
+      <div id="msgOk"  class="msg ok"></div>
+      <div id="msgErr" class="msg err"></div>
+
+      <!-- Profile picture -->
+      <div class="pic-wrap" id="profilePictureSection">
+        <img id="profilePreview" class="avatar" alt="Profile picture">
+        <div style="margin-top:6px;">
+          <input type="file" id="profilePic" name="profilePic" accept="image/*">
+        </div>
+        <div style="margin-top:10px;">
+          <button id="deletePicBtn" type="button" class="btn-delete">Delete Picture</button>
+        </div>
+      </div>
+
+      <!-- Pending approval banner -->
+      <div id="pendingBanner" style="display:none; background:#fff3cd; color:#856404; padding:10px; border-radius:6px; margin-bottom:16px;">
+        Pending profile update waiting for admin review.
+      </div>
+
+      <!-- Declined update banner -->
+      <div id="declinedBanner" style="display:none; background:#f8d7da; color:#721c24; padding:10px; border-radius:6px; margin-bottom:16px;">
+        <span id="declinedText">Your last profile update was declined. Please update your profile again.</span>
+        <div id="declinedReason" style="margin-top:6px; font-size:0.98em;"></div>
+      </div>
+
+      <!-- Form -->
+      <form id="profileForm">
+        <div class="form-grid">
+          <div class="label"><i class="material-icons">person</i> Full Name</div>
+          <div class="field"><input type="text" id="name" name="name" required></div>
+
+          <div class="label"><i class="material-icons">email</i> Email (cannot be changed)</div>
+          <div class="field"><input type="email" id="email" name="email" readonly></div>
+
+          <div class="label"><i class="material-icons">public</i> State</div>
+          <div class="field">
+            <div class="input-field">
+              <select id="state" name="state" required>
+                <option value="">Select your state</option>
+                <option>New South Wales</option>
+                <option>Victoria</option>
+                <option>Queensland</option>
+                <option>Western Australia</option>
+                <option>South Australia</option>
+                <option>Tasmania</option>
+                <option>Northern Territory</option>
+                <option>Australian Capital Territory</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="label"><i class="material-icons">security</i> Role</div>
+          <div class="field"><input type="text" id="role" name="role" readonly></div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn" id="saveProfileBtn"> Save Changes</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="/components/sidebar.js"></script>
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "/";
+
+    document.addEventListener("DOMContentLoaded", () => loadSidebar());
+
+    // Helpers: messages with auto-dismiss for success
+    function showOk(msg, ms = 2000) {
+      const el = document.getElementById('msgOk');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('msgErr').style.display = 'none';
+      if (ms) setTimeout(() => { el.style.display = 'none'; }, ms);
+    }
+    function showErr(msg) {
+      const el = document.getElementById('msgErr');
+      el.textContent = msg;
+      el.style.display = 'block';
+      document.getElementById('msgOk').style.display = 'none';
+    }
+
+    // Save profile
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const formData = new FormData(form);
+
+      // Check if image is selected
+      const file = document.getElementById("profilePic").files[0];
+
+      let profilePicUrl = null;
+
+      if (file) {
+        // Upload image first
+        const imgData = new FormData();
+        imgData.append("file", file);
+
+        try {
+          const imgRes = await fetch("/api/users/upload/profile-pic", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + token }, 
+            body: imgData
+          });
+          const imgJson = await imgRes.json();
+          if (!imgRes.ok) throw new Error(imgJson.message || "Image upload failed");
+          profilePicUrl = imgJson.url;
+        } catch (err) {
+          showErr("Image upload failed: " + err.message);
+          return;
+        }
+      }
+
+      // Prepare profile update data
+      const updateData = {
+        name: formData.get("name"),
+        state: formData.get("state"),
+      };
+      if (profilePicUrl) updateData.profilePic = profilePicUrl;
+
+      try {
+        const res = await fetch("/api/users/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
+          },
+          body: JSON.stringify(updateData)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || "Update failed");
+        showOk("Profile updated successfully.", 2000);
+        loadProfile();
+      } catch (err) {
+        showErr(err.message);
+      }
+    });
+
+    // Load profile
+    async function loadProfile() {
+      try {
+        const res = await fetch("/api/users/profile", { headers: { Authorization: "Bearer " + token } });
+        if (!res.ok) throw new Error("Failed to load profile");
+        const user = await res.json();
+
+        renderProfile(user);
+
+        const preview = document.getElementById("profilePreview");
+        const delBtn  = document.getElementById("deletePicBtn");
+        if (user.profilePic) {
+          preview.src = user.profilePic; // Cloudinary URL
+          preview.style.display = "inline-block";
+          delBtn.style.display = "inline-block";
+        } else {
+          preview.style.display = "none";
+          delBtn.style.display = "none";
+        }
+
+        if (user.pendingApproval) {
+          document.getElementById('pendingBanner').style.display = 'block';
+        }
+
+        if (!user.pendingApproval && user.lastDeclinedUpdate) {
+          document.getElementById('declinedBanner').style.display = 'block';
+          document.getElementById('declinedReason').textContent =
+            user.lastDeclinedUpdate.reason ? "Reason: " + user.lastDeclinedUpdate.reason : "";
+          // clear the flag after showing once
+          fetch("/api/users/profile/clear-decline", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + token }
+          });
+        }
+      } catch (err) {
+        showErr(err.message);
+      }
+    }
+
+    // Render profile data
+    function renderProfile(user) {
+      document.getElementById('name').value = user.name;
+      document.getElementById('email').value = user.email;
+      document.getElementById('state').value = user.state;
+      document.getElementById('role').value = user.role;
+
+      if (user.role === "admin") {
+        // Disable editing
+        document.getElementById('name').setAttribute('disabled', true);
+        document.getElementById('email').setAttribute('disabled', true);
+        document.getElementById('state').setAttribute('disabled', true);
+        document.getElementById('role').setAttribute('disabled', true);
+
+        // Hide save button and profile picture section
+        document.getElementById('saveProfileBtn').style.display = 'none';
+        document.getElementById('profilePictureSection').style.display = 'none';
+      }
+    }
+
+    // Preview chosen picture
+    document.getElementById("profilePic").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const preview = document.getElementById("profilePreview");
+        preview.src = evt.target.result;
+        preview.style.display = "inline-block";
+        document.getElementById("deletePicBtn").style.display = "inline-block";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Delete picture
+    document.getElementById("deletePicBtn").addEventListener("click", async () => {
+      try {
+        const res = await fetch("/api/users/profile/picture", {
+          method: "DELETE",
+          headers: { Authorization: "Bearer " + token }
+        });
+        if (!res.ok) throw new Error("Failed to delete picture");
+
+        // UI reset
+        document.getElementById("profilePic").value = "";
+        document.getElementById("profilePreview").style.display = "none";
+        document.getElementById("deletePicBtn").style.display = "none";
+
+        // Auto-dismiss after 2s
+        showOk("Profile picture deleted.", 2000);
+      } catch (err) {
+        showErr(err.message);
+      }
+    });
+
+    loadProfile();
+  </script>
+</body>
+</html>

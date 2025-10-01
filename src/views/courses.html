@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Courses</title>
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+    />
+    <link rel="stylesheet" href="/css/courses.css" />
+  </head>
+  <body>
+    <div class="sidebar" id="sidebar"></div>
+
+    <header class="topbar">
+      <div class="topbar-right">
+        <i class="material-icons profile-icon" id="profileBtn"
+          >account_circle</i
+        >
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <section id="courses-home" class="card block" style="display: none">
+        <div class="card__left">
+          <h4 class="h-title">Courses</h4>
+          <p class="muted">
+            Explore courses tailored to your career path. Whether you're just
+            starting out or advancing in your field, this is your hub for
+            professional learning.
+          </p>
+          <button id="btnManageCourses" class="chip-btn">
+            <i class="material-icons tiny">build</i> Manage Courses
+          </button>
+        </div>
+        <div class="card__right">
+          <img src="/img/learning.png" alt="learn" class="hero-illus" />
+        </div>
+      </section>
+
+      <section
+        class="pill-list"
+        id="courses-pills"
+        style="display: none"
+      ></section>
+
+      <section id="courses-manage" class="card block" style="display: block">
+        <div class="card__left">
+          <h4 id="manageHeading" class="h-title">Courses</h4>
+          <p class="muted">
+            Explore courses tailored to your career path. Manage and organize
+            content here.
+          </p>
+
+          <div class="controls-row admin-only">
+            <button id="btnAddCourse" class="chip-btn">
+              <i class="material-icons tiny">add</i> Add
+            </button>
+          </div>
+
+          <div class="filters-row" style="display: flex">
+            <div class="filter">
+              <label for="filterCategory">Job Category</label>
+              <select
+                id="filterCategory"
+                class="soft-input"
+                style="display: block"
+              >
+                <option value="">All</option>
+              </select>
+            </div>
+            <div class="filter">
+              <label for="filterRole">Role</label>
+              <select id="filterRole" class="soft-input" style="display: block">
+                <option value="">All</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="manage-list" class="manage-list"></div>
+
+          <div id="manage-pagination" class="pagination"></div>
+
+          <div id="bulk-actions" class="bulk-actions" style="display: none">
+            <span id="selected-count">0 selected</span>
+            <button id="btnDeleteSelected" class="btn-danger">Delete</button>
+            <button id="btnArchiveSelected" class="btn-archive">Archive all</button>
+            <button id="btnCancelBulk" class="btn-soft">Cancel</button>
+          </div>
+        </div>
+
+        <div class="card__right">
+          <img src="/img/learning.png" alt="learn" class="hero-illus" />
+        </div>
+      </section>
+
+      <section id="courses-add" class="card block" style="display: none">
+        <div class="card__left">
+          <h4 class="h-title">Add Courses</h4>
+          <div class="form-table">
+            <div class="form-row">
+              <div class="form-label">Title</div>
+              <div class="form-field">
+                <input
+                  id="addTitle"
+                  class="soft-input"
+                  type="text"
+                  placeholder="Enter course title"
+                  required
+                />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Job Category</div>
+              <div class="form-field">
+                <select
+                  id="addCategory"
+                  class="soft-input"
+                  required
+                  style="display: block"
+                >
+                  <option value="">Select Category</option>
+                  <option value="devops">DevOps</option>
+                  <option value="kitchen">Kitchen</option>
+                  <option value="accounting">Accounting</option>
+                  <option value="delivery">Delivery</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Role</div>
+              <div class="form-field">
+                <select
+                  id="addRole"
+                  class="soft-input"
+                  required
+                  style="display: block"
+                >
+                  <option value="">Select Role</option>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row form-row-top">
+              <div class="form-label">Course Content</div>
+              <div class="form-field">
+                <textarea
+                  id="addCourseContent"
+                  class="soft-input soft-textarea"
+                  placeholder="Paste notes, outline, or links here..."
+                ></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Quiz Required to Complete Course</div>
+              <div class="form-field">
+                <label
+                  style="display: inline-flex; align-items: center; gap: 10px"
+                >
+                  <input id="addQuizReq" type="checkbox" />
+                  <span>Required</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button id="btnCancelAdd" class="btn-soft" type="button">
+                Cancel
+              </button>
+              <button id="btnSaveAdd" class="btn-cta" type="button">
+                Save
+              </button>
+            </div>
+            <div id="addError" class="help-error" style="display: none"></div>
+            <div id="addSuccess" class="help-success" style="display: none">
+              Saved!
+            </div>
+          </div>
+        </div>
+        <div class="card__right">
+          <img src="/img/learning.png" alt="learn" class="hero-illus" />
+        </div>
+      </section>
+
+      <section id="course-details" class="card block" style="display: none">
+        <div class="card__left">
+          <button id="btnBackFromDetails" class="chip-btn">
+            <i class="material-icons tiny">arrow_back</i> Back
+          </button>
+          <h4 id="detailsTitle" class="h-title"></h4>
+          <p id="detailsMeta" class="muted"></p>
+          <div id="detailsContent" class="soft-text"></div>
+        </div>
+        <div class="card__right">
+          <img src="/img/learning.png" alt="learn" class="hero-illus" />
+        </div>
+      </section>
+
+      <section id="courses-edit" class="card block" style="display: none">
+        <div class="card__left">
+          <h4 class="h-title">Edit Course</h4>
+          <input type="hidden" id="editId" />
+          <div class="form-table">
+            <div class="form-row">
+              <div class="form-label">Title</div>
+              <div class="form-field">
+                <input id="editTitle" class="soft-input" type="text" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Job Category</div>
+              <div class="form-field">
+                <select
+                  id="editCategory"
+                  class="soft-input"
+                  style="display: block"
+                >
+                  <option value="devops">DevOps</option>
+                  <option value="kitchen">Kitchen</option>
+                  <option value="accounting">Accounting</option>
+                  <option value="delivery">Delivery</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Role</div>
+              <div class="form-field">
+                <select id="editRole" class="soft-input" style="display: block">
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row form-row-top">
+              <div class="form-label">Course Content</div>
+              <div class="form-field">
+                <textarea
+                  id="editCourseContent"
+                  class="soft-input soft-textarea"
+                ></textarea>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Quiz Required</div>
+              <div class="form-field">
+                <label
+                  style="display: inline-flex; align-items: center; gap: 10px"
+                >
+                  <input id="editQuizReq" type="checkbox" /><span
+                    >Required</span
+                  >
+                </label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button id="btnCancelEdit" class="btn-soft" type="button">
+                Cancel
+              </button>
+              <button id="btnSaveEdit" class="btn-cta" type="button">
+                Save
+              </button>
+            </div>
+            <div id="editError" class="help-error" style="display: none"></div>
+            <div id="editSuccess" class="help-success" style="display: none">
+              Updated!
+            </div>
+          </div>
+        </div>
+        <div class="card__right">
+          <img src="/img/learning.png" alt="learn" class="hero-illus" />
+        </div>
+      </section>
+
+      <div id="courses-error" class="help-error" style="display: none">
+        Failed to load modules. Please try again later.
+      </div>
+      <div id="courses-empty" class="help-muted" style="display: none">
+        No courses yet.
+      </div>
+    </main>
+
+    <script src="/components/sidebar.js"></script>
+    <script>
+      function parseJwt(token) {
+        try {
+          const base64Url = token.split(".")[1];
+          if (!base64Url) return null;
+          const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+          const jsonPayload = decodeURIComponent(
+            atob(base64)
+              .split("")
+              .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+              .join("")
+          );
+          return JSON.parse(jsonPayload);
+        } catch {
+          return null;
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        if (typeof loadSidebar === "function") loadSidebar();
+
+        const token = localStorage.getItem("token");
+        if (!token) {
+          window.location.href = "/";
+          return;
+        }
+
+        const user = parseJwt(token);
+        if (!user) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/";
+          return;
+        }
+
+        const isAdmin = user.role === "admin";
+        const manageSection = document.getElementById("courses-manage");
+        if (manageSection) manageSection.style.display = "block";
+
+        const hero = document.getElementById("courses-home");
+        const pills = document.getElementById("courses-pills");
+        if (hero) hero.style.display = "none";
+        if (pills) pills.style.display = "none";
+
+        document
+          .querySelectorAll(".admin-only")
+          .forEach((el) => (el.style.display = isAdmin ? "" : "none"));
+        const heading = document.getElementById("manageHeading");
+        if (heading)
+          heading.textContent = isAdmin ? "Manage Courses" : "Courses";
+
+        const detailsActions = document.getElementById("detailsActions");
+        if (detailsActions)
+          detailsActions.style.display = isAdmin ? "" : "none";
+
+        const profileBtn = document.getElementById("profileBtn");
+        if (profileBtn)
+          profileBtn.addEventListener("click", () => {
+            window.location.href = "/profile.html";
+          });
+
+        document.getElementById("logoutBtn").addEventListener("click", () => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          window.location.href = "/";
+        });
+      });
+    </script>
+    <script src="/js/courses.js"></script>
+  </body>
+</html>

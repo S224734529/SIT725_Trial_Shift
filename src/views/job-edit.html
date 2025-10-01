@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Job - Trial Shift</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/job-post.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1>Edit Job</h1>
+    <div class="row">
+      <div class="col s12">
+        <div class="card">
+          <div class="card-content">
+            <form id="editForm">
+              <input type="hidden" id="jobId" name="jobId">
+              
+              <!-- Job Title -->
+              <div class="row">
+                <div class="input-field col s12">
+                  <input type="text" id="title" name="title" required>
+                  <label for="title">Job Title</label>
+                </div>
+              </div>
+
+              <!-- Category Select with Badges -->
+              <div class="row">
+                <div class="input-field col s12">
+                  <select id="category" name="category" required>
+                    <option value="" disabled selected>Choose a category</option>
+                    <option value="kitchenhand" data-count="0">Kitchen Hand <span class="badge" data-badge-caption="">0 jobs</span></option>
+                    <option value="cleaning" data-count="0">Cleaning <span class="badge" data-badge-caption="">0 jobs</span></option>
+                    <option value="delivery" data-count="0">Delivery <span class="badge" data-badge-caption="">0 jobs</span></option>
+                    <option value="waiter" data-count="0">Waiter <span class="badge" data-badge-caption="">0 jobs</span></option>
+                    <option value="barista" data-count="0">Barista <span class="badge" data-badge-caption="">0 jobs</span></option>
+                    <option value="pickpacker" data-count="0">Pick Packer <span class="badge" data-badge-caption="">0 jobs</span></option>
+                  </select>
+                  <label for="category">Category</label>
+                </div>
+              </div>
+
+              <!-- Location Select -->
+              <div class="row">
+                <div class="input-field col s12">
+                  <select id="location" name="location" required>
+                    <option value="" disabled selected>Choose a location</option>
+                      <option value="Burwood">Burwood</option>
+                      <option value="Box Hill">Box Hill</option>
+                      <option value="Camberwell">Camberwell</option>
+                      <option value="Dandenong">Dandenong</option>
+                      <option value="Doncaster">Doncaster</option>
+                      <option value="Frankston">Frankston</option>
+                      <option value="Footscray">Footscray</option>
+                      <option value="Glen Waverley">Glen Waverley</option>
+                      <option value="Hawthorn">Hawthorn</option>
+                      <option value="Mitcham">Mitcham</option>
+                      <option value="Moorabbin">Moorabbin</option>
+                      <option value="Nunawading">Nunawading</option>
+                      <option value="Prahran">Prahran</option>
+                      <option value="Richmond">Richmond</option>
+                      <option value="St Kilda">St Kilda</option>
+                      <option value="Sunshine">Sunshine</option>
+                  </select>
+                  <label for="location">Location</label>
+                </div>
+              </div>
+
+              <!-- Shift Details -->
+              <div class="row">
+                <div class="input-field col s12">
+                  <textarea id="shiftDetails" name="shiftDetails" class="materialize-textarea" required></textarea>
+                  <label for="shiftDetails">Shift Details</label>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="row">
+                <div class="input-field col s12">
+                  <button type="submit" class="btn">Update Job</button>
+                </div>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col s12 center-align">
+        <a href="/job-post" class="btn">Back to Job Posting</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize selects
+      M.AutoInit();
+
+      const selects = document.querySelectorAll('select');
+      M.FormSelect.init(selects);
+
+      // Get job ID from query
+      const urlParams = new URLSearchParams(window.location.search);
+      const jobId = urlParams.get('id');
+      if (!jobId) {
+        alert('No job selected for editing.');
+        window.location.href = '/job-post';
+        return;
+      }
+      document.getElementById('jobId').value = jobId;
+
+      // Fetch job data
+      fetch(`/api/jobs/${jobId}`)
+        .then(resp => resp.json())
+        .then(job => {
+          document.getElementById('title').value = job.title || '';
+          document.getElementById('shiftDetails').value = job.shiftDetails || '';
+
+          // Set category and update badges
+          const categorySelect = document.getElementById('category');
+          categorySelect.value = job.category.name || job.category || '';
+          const instanceCat = M.FormSelect.getInstance(categorySelect);
+          if (instanceCat) instanceCat.destroy();
+          M.FormSelect.init(categorySelect);
+
+          // Set location
+          const locationSelect = document.getElementById('location');
+          locationSelect.value = job.location || '';
+          const instanceLoc = M.FormSelect.getInstance(locationSelect);
+          if (instanceLoc) instanceLoc.destroy();
+          M.FormSelect.init(locationSelect);
+
+          M.updateTextFields();
+        })
+        .catch(err => console.error('Error fetching job data:', err));
+
+      // Submit edit form
+      const form = document.getElementById('editForm');
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        fetch(`/api/jobs/${jobId}`, {
+          method: 'PUT',
+          body: new URLSearchParams(data),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        })
+        .then(resp => {
+          if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
+          return resp.json();
+        })
+        .then(data => {
+          alert('Job updated successfully!');
+          window.location.href = '/job-post';
+        })
+        .catch(err => console.error('Edit error:', err));
+      });
+    });
+  </script>
+</body>
+</html>

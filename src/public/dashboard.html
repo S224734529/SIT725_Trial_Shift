@@ -2,114 +2,81 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <link rel="stylesheet" href="/css/styles.css">
-    <style>
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            font-family: Arial, sans-serif;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
 </head>
 
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="logo">
-            <img src="/img/logo.png" alt="Logo">
-        </div>
-        <ul id="menuList"></ul>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-right">
+      <i class="material-icons profile-icon" id="profileBtn">account_circle</i>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
     </div>
+  </header>
 
-    <!-- Top bar -->
-    <header class="topbar">
-        <div class="topbar-right">
-            <i class="material-icons profile-icon">account_circle</i>
-            <button id="logoutBtn" class="logout-btn">Logout</button>
-        </div>
-    </header>
+  <!-- Main content -->
+  <main class="main-content">
+    <h4 class="welcome">Welcome to Dashboard</h4>
+    <p id="welcomeMessage"></p>
+  </main>
 
-    <!-- Main content -->
-    <main class="main-content">
-        <h4 class="welcome">Welcome to Dashboard</h4>
-        <p id="welcomeMessage"></p>
-    </main>
+  <!-- Sidebar component -->
+  <script src="/components/sidebar.js"></script>
+  <script>
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return null;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch {
+        return null;
+      }
+    }
 
-    <script>
-        // Decode JWT
-        function parseJwt(token) {
-            try {
-                return JSON.parse(atob(token.split('.')[1]));
-            } catch (e) {
-                return null;
-            }
-        }
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof loadSidebar === "function") {
+        loadSidebar();
+      }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                window.location.href = "/";
-                return;
-            }
+      const token = localStorage.getItem("token");
+      if (!token) {
+        window.location.href = "/";
+        return;
+      }
 
-            const user = parseJwt(token);
-            if (!user) {
-                window.location.href = "/";
-                return;
-            }
+      const user = parseJwt(token);
+      if (!user) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/";
+        return;
+      }
 
-            document.getElementById("welcomeMessage").textContent = `Hello, ${user.name} (${user.role})`;
+      document.getElementById("welcomeMessage").textContent =
+        `Hello, ${user.name || user.username || "User"} (${user.role || "user"})`;
 
-            const menuList = document.getElementById("menuList");
-            let menuItems = [];
+      document.getElementById("profileBtn").addEventListener("click", () => {
+        window.location.href = "/profile.html";
+      });
 
-            if (user.role === "admin") {
-                menuItems = [
-                    { name: "Dashboard", icon: "dashboard" },
-                    { name: "Jobs", icon: "work" },
-                    { name: "Notifications", icon: "notifications" },
-                    { name: "Courses", icon: "school" },
-                    { name: "Users", icon: "group" },
-                    { name: "Review Request", icon: "assignment" },
-                    { name: "Manage Jobs", icon: "settings" }
-                ];
-            } else if (user.role === "employer") {
-                menuItems = [
-                    { name: "Dashboard", icon: "dashboard" },
-                    { name: "Job Management", icon: "work" },
-                    { name: "Notifications", icon: "notifications" },
-                    { name: "Courses", icon: "school" }
-                ];
-            } else {
-                menuItems = [
-                    { name: "Dashboard", icon: "dashboard" },
-                    { name: "Jobs", icon: "work" },
-                    { name: "Notifications", icon: "notifications" },
-                    { name: "Courses", icon: "school" }
-                ];
-            }
-
-            menuList.innerHTML = menuItems
-                .map(item => `<li><i class="material-icons">${item.icon}</i> ${item.name}</li>`)
-                .join("");
-        });
-
-        // Logout function
-        document.getElementById('logoutBtn').addEventListener('click', function () {
-            // Remove JWT token from localStorage
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/';
-        });
-    </script>
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.href = "/";
+      });
+    });
+  </script>
 </body>
 
 </html>

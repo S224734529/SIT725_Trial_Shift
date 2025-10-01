@@ -1,0 +1,14 @@
+body { padding-top: 20px;
+background: #f3f8fc; }
+.card-title { font-weight: 600; }
+table td, table th { vertical-align: middle; }
+
+.job-pref-card {
+  width: 100%;
+  max-width: none !important;   /* in case an earlier rule was limiting it */
+}
+
+/* Optional: add a little breathing room inside the main column */
+.col.s12.m9.l10.xl10 {
+  padding-right: 24px;
+}

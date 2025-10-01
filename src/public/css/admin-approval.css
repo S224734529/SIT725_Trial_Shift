@@ -1,0 +1,80 @@
+.request-card {
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+    margin-bottom: 20px;
+    padding: 18px 20px;
+}
+
+.request-actions {
+    margin-top: 12px;
+}
+
+.approve-btn,
+.decline-btn {
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    margin-right: 10px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.approve-btn {
+    background: #43a047;
+    color: #fff;
+}
+
+.decline-btn {
+    background: #e53935;
+    color: #fff;
+}
+
+.request-status {
+    font-size: 0.95em;
+    margin-bottom: 8px;
+    color: #888;
+}
+
+.field-label {
+    font-weight: bold;
+    margin-right: 6px;
+}
+
+.user-info {
+    margin-bottom: 8px;
+    color: #1976d2;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 28px 32px 18px 32px;
+    border-radius: 10px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+    text-align: center;
+    min-width: 260px;
+}
+
+.modal-close-btn {
+    margin-top: 18px;
+    padding: 8px 24px;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+}

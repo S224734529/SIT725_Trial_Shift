@@ -1,3 +1,16 @@
+#courses-home[style*="display: none"] + #courses-home-pagination {
+  display: none !important;
+}
+
+.card.block .pagination:first-child {
+  display: none !important;
+}
+.card__left > .pagination:first-child {
+  display: none !important;
+}
+#courses-manage .card__left > .pagination:first-child {
+  display: none !important;
+}
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -168,6 +181,19 @@ body {
   background: #34495e;
 }
 
+.sidebar a {
+  color: inherit;           
+  text-decoration: none;   
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar a:hover {
+  color: #fff;
+}
+
 /* Main content */
 .main-content {
   margin-left: 250px;
@@ -224,7 +250,7 @@ body {
   margin-bottom: 10px;
 }
 
-@media(max-width: 480px) {
+@media (max-width: 480px) {
   .container {
     padding: 10px;
   }
@@ -232,5 +258,365 @@ body {
   .tab-btn {
     font-size: 14px;
     padding: 8px;
+  }
+}
+
+/* Courses UI */
+.block {
+  margin: 18px 0;
+}
+.card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  padding: 18px 20px;
+}
+.card__left {
+  width: 100%;
+}
+.card__right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.card .hero-illus {
+  width: 160px;
+  max-width: 100%;
+  opacity: 0.95;
+}
+@media (min-width: 980px) {
+  .card {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 12px;
+  }
+}
+
+.h-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+.muted,
+.help-muted {
+  color: #6b7280;
+}
+.help-error {
+  color: #c62828;
+  background: #ffe8e8;
+  border: 1px solid #ffc7c7;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+.help-success {
+  color: #1b5e20;
+  background: #e6ffed;
+  border: 1px solid #c8f7d0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #374151;
+}
+.chip-btn:hover {
+  background: #e8eef6;
+}
+
+.pill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 18px 0;
+}
+.pill {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+}
+.pill:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.filters-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 12px 0 8px;
+}
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.soft-input {
+  background: #f7f8fa;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  outline: none;
+}
+.soft-input:focus {
+  border-color: #94a3b8;
+  background: #ffffff;
+}
+
+#courses-add .soft-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+#courses-add .soft-textarea {
+  width: 100%;
+}
+
+#courses-add .soft-textarea {
+  width: 100%;
+  min-height: 280px;
+  resize: vertical;
+}
+
+body:has(.sidebar) {
+  display: block;
+  height: auto;
+  align-items: initial;
+  justify-content: initial;
+}
+
+.main-content {
+  width: calc(100vw - 250px);
+  max-width: none;
+}
+
+#courses-add.card {
+  width: 100%;
+}
+
+/*  Manage Courses UI  */
+.manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+.manage-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+.manage-title {
+  font-weight: 600;
+}
+.manage-actions {
+  display: flex;
+  gap: 8px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.icon-btn:hover {
+  background: #eef2f7;
+}
+
+.pagination {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+}
+.page-btn.active {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+.form-grid {
+  max-width: 760px;
+}
+.form-grid .row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0;
+}
+.row-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-soft {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.btn-cta {
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 0;
+  background: #0ea5a3;
+  color: #fff;
+  font-weight: 600;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.controls-row {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 8px;
+}
+
+/*  Add Courses layout  */
+.form-table {
+  max-width: 1000px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  align-items: center;
+  gap: 18px;
+  margin: 16px 0;
+}
+
+.form-row-top {
+  align-items: start;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #1f2937;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.form-label::after {
+  content: " :";
+  color: #6b7280;
+  margin-left: 6px;
+}
+
+.form-field {
+  width: 100%;
+}
+
+.soft-textarea {
+  width: 100%;
+  min-height: 240px;
+  resize: vertical;
+}
+
+#addCourseContent,
+#editCourseContent {
+  min-height: 240px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+#courses-add .card__right {
+  display: none !important;
+}
+
+@media (min-width: 980px) {
+  #courses-add {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+#courses-add .form-table {
+  max-width: 100%;
+}
+
+#courses-add .soft-textarea {
+  width: 100%;
+  min-height: 280px;
+  resize: vertical;
+}
+
+body:has(.sidebar) {
+  display: block;
+  height: auto;
+  align-items: initial;
+  justify-content: initial;
+}
+
+.main-content {
+  width: calc(100vw - 250px);
+  max-width: none;
+}
+
+#courses-add.card {
+  width: 100%;
+}
+
+#courses-add .soft-textarea {
+  width: 100%;
+}
+
+#courses-add #addCourseContent {
+  width: 100%;
+  height: 160px;
+  min-height: 0;
+  resize: vertical;
+}
+
+@media (min-width: 980px) {
+  #courses-manage.card {
+    transform: scale(0.9);
+    transform-origin: top center;
+    width: 90%;
+    margin: 0 auto;
+  }
+  #courses-add.card {
+    transform: scale(0.9);
+    transform-origin: top center;
+    width: 90%;
+    margin: 0 auto;
   }
 }

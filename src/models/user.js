@@ -6,7 +6,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, enum: ["admin", "employer", "jobseeker"], default: "jobseeker" },
+  profilePic: { type: String, default: "" },
   state: { type: String, required: true },
+  active: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now }
 });
 
@@ -22,4 +24,6 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-module.exports = mongoose.model("User", userSchema);
+const User = mongoose.models.User || mongoose.model("User", userSchema);
+
+module.exports = User;

@@ -1,3 +1,9 @@
 node_modules
 .vscode
 .env
+.DS_Store
+testing/reports/
+public/uploads/
+*.webm
+*.mp4
+test-results/

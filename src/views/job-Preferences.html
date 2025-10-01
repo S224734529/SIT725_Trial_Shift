@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Job Preferences</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/job-preferences.css"/>
+</head>
+<body>
+  <div class="row">
+  <!-- Sidebar -->
+  <div class="col s12 m3 l2 xl2">
+    <div class="sidebar" id="sidebar"></div>
+  </div>
+  <div class="col s12 m3 l2 xl10">
+    <h4 class="teal-text" style="margin-top:30px;">Job Preferences</h4>
+
+    <div class="card job-pref-card" style="margin-bottom:24px;">
+      <div class="card-content">
+        <span class="card-title">Add / Edit</span>
+        <form id="prefForm">
+          <input type="hidden" id="prefId"/>
+          <div class="input-field">
+            <input id="preferredLocation" type="text" required />
+            <label for="preferredLocation">Preferred Location</label>
+          </div>
+          <div class="input-field">
+            <input id="preferredCategories" type="text" placeholder="e.g., Software, Data, QA"/>
+            <label for="preferredCategories">Preferred Job Categories (comma separated)</label>
+          </div>
+          <button class="btn waves-effect waves-light" type="submit">Save</button>
+          <a id="resetBtn" class="btn-flat">Clear</a>
+        </form>
+      </div>
+    </div>
+
+    <div class="card job-pref-card">
+      <div class="card-content">
+        <span class="card-title">Your Preferences</span>
+        <div class="right-align" style="margin-bottom:10px;">
+          <label>
+            <input type="checkbox" id="selectAll"/>
+            <span>Select All</span>
+          </label>
+          <a id="bulkDeleteBtn" class="btn red lighten-1 waves-effect" style="margin-left:10px;">Delete Selected</a>
+        </div>
+        <table class="highlight responsive-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Location</th>
+              <th>Categories</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="prefsBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+  <script src="/js/job-preferences.js"></script>
+  <script src="/components/sidebar.js"></script>
+  <script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof loadSidebar === 'function') loadSidebar();
+
+  const token = localStorage.getItem("token");
+  if (!token) { window.location.href = "/"; return; }
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const welcomeEl = document.getElementById("welcomeMessage");
+    if (welcomeEl) welcomeEl.textContent = `Hello, ${payload.name} (${payload.role})`;
+  } catch {}
+
+  const profileBtn = document.getElementById("profileBtn");
+  if (profileBtn) profileBtn.addEventListener("click", () => location.href = "profile.html");
+
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (logoutBtn) logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    location.href = "/";
+  });
+});
+</script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+</html>

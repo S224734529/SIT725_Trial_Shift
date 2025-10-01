@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const User = require('./src/models/user');
 const Module = require('./src/models/module');
+const bcrypt = require('bcryptjs'); 
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -11,13 +12,65 @@ const users = [
     email: 'content_admin@example.com',
     password: 'admin123',
     role: 'admin',
+    state: 'Victoria',
+    active: true
   },
   {
-    name: 'Content_Job_Seaker',
-    email: 'job_seaker@example.com',
-    password: 'jobseaker123',
+    name: 'Content_Job_Seeker',
+    email: 'job_seeker@example.com',
+    password: 'jobseeker123',
     role: 'jobseeker',
+    state: 'New South Wales',
+    active: true
   },
+  {
+    name: 'John Employer',
+    email: 'john.employer@example.com',
+    password: 'password123',
+    role: 'employer',
+    state: 'Queensland',
+    active: true
+  },
+  {
+    name: 'Sarah Jobseeker',
+    email: 'sarah.jobseeker@example.com',
+    password: 'password123',
+    role: 'jobseeker',
+    state: 'Western Australia',
+    active: true
+  },
+  {
+    name: 'Mike Manager',
+    email: 'mike.manager@example.com',
+    password: 'password123',
+    role: 'employer',
+    state: 'South Australia',
+    active: false  
+  },
+  {
+    name: 'Lisa Developer',
+    email: 'lisa.developer@example.com',
+    password: 'password123',
+    role: 'jobseeker',
+    state: 'Tasmania',
+    active: true
+  },
+  {
+    name: 'David Recruiter',
+    email: 'david.recruiter@example.com',
+    password: 'password123',
+    role: 'employer',
+    state: 'Australian Capital Territory',
+    active: true
+  },
+  {
+    name: 'Emma Candidate',
+    email: 'emma.candidate@example.com',
+    password: 'password123',
+    role: 'jobseeker',
+    state: 'Northern Territory',
+    active: false  
+  }
 ];
 
 const modules = [
@@ -35,11 +88,11 @@ const modules = [
     notifications: [],
   },
   {
-    title: 'Cleaning Standards',
-    description: 'Understand cleaning protocols and standards.',
+    title: 'Accounting Standards',
+    description: 'Understand Accounting protocols and standards.',
     assets: [
-      { type: 'video', url: 'https://youtu.be/cleaning-standards', title: 'Cleaning Video', order: 1 },
-      { type: 'text', text: 'Always use gloves and approved cleaning agents.', title: 'Cleaning Tips', order: 2 },
+      { type: 'video', url: 'https://youtu.be/Accounting-standards', title: 'Accounting Video', order: 1 },
+      { type: 'text', text: 'Always use gloves and approved Accounting agents.', title: 'Accounting Tips', order: 2 },
     ],
     reactions: [],
     releases: [
@@ -50,39 +103,64 @@ const modules = [
 ];
 
 async function seed() {
-  await mongoose.connect(MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-  console.log('Connected to MongoDB');
+  try {
+    await mongoose.connect(MONGODB_URI, { 
+      useNewUrlParser: true, 
+      useUnifiedTopology: true 
+    });
+    console.log('Connected to MongoDB');
 
-  // Upsert users
-  const userDocs = [];
-  for (const user of users) {
-    const doc = await User.findOneAndUpdate(
-      { email: user.email },
-      user,
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-    userDocs.push(doc);
+    // Clear existing data (optional - be careful in production!)
+    // await User.deleteMany({});
+    // await Module.deleteMany({});
+
+    // Upsert users with password hashing
+    const userDocs = [];
+    for (const user of users) {
+      // Hash password before saving
+      const hashedPassword = await bcrypt.hash(user.password, 12);
+      
+      const doc = await User.findOneAndUpdate(
+        { email: user.email },
+        { ...user, password: hashedPassword },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      userDocs.push(doc);
+      console.log(`✓ User created/updated: ${user.name} (${user.role})`);
+    }
+
+    // Add reactions and notifications
+    if (userDocs.length > 1) {
+      modules[0].reactions.push({ user: userDocs[1]._id, type: 'like' });
+      modules[0].notifications.push({ 
+        user: userDocs[1]._id, 
+        message: 'New module released: Kitchen Basics' 
+      });
+    }
+
+    // Upsert modules
+    for (const mod of modules) {
+      await Module.findOneAndUpdate(
+        { title: mod.title },
+        mod,
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+      console.log(`✓ Module created/updated: ${mod.title}`);
+    }
+
+    console.log('\nDatabase seeding completed successfully!');
+    console.log(`Created/Updated: ${userDocs.length} users and ${modules.length} modules`);
+    
+  } catch (error) {
+    console.error('Error seeding database:', error);
+  } finally {
+    await mongoose.disconnect();
+    console.log('Disconnected from MongoDB');
   }
-
-  // Add a like reaction from job seeker to first module
-  modules[0].reactions.push({ user: userDocs[1]._id, type: 'like' });
-  // Add notification for job seeker
-  modules[0].notifications.push({ user: userDocs[1]._id, message: 'New module released: Kitchen Basics' });
-
-  // Upsert modules
-  for (const mod of modules) {
-    await Module.findOneAndUpdate(
-      { title: mod.title },
-      mod,
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-  }
-
-  console.log('Seeded modules and users.');
-  await mongoose.disconnect();
 }
 
-seed().catch(err => {
-  console.error(err);
-  mongoose.disconnect();
-});
+if (require.main === module) {
+  seed();
+}
+
+module.exports = { seed, users, modules };

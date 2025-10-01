@@ -30,6 +30,12 @@ const NotificationSchema = new mongoose.Schema({
 const ModuleSchema = new mongoose.Schema({
   title: { type: String, required: true, index: true },
   description: { type: String },
+  // Added fields for Courses UI/filters
+  category: { type: String, index: true },
+  role: { type: String, index: true },
+  visibility: { type: String, enum: ['public', 'private'], default: 'public', index: true },
+  isArchived: { type: Boolean, default: false, index: true },
+
   assets: [AssetSchema],
   reactions: [ReactionSchema],
   releases: [ReleaseSchema],
@@ -38,6 +44,6 @@ const ModuleSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-ModuleSchema.index({ title: 1 });
+ModuleSchema.index({ title: 1, category: 1, role: 1 });
 
 module.exports = mongoose.model('Module', ModuleSchema);

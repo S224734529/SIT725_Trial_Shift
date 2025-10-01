@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Matched Jobs</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"/>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="stylesheet" href="/public/css/job-preferences.css"/>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="container">
+    <!-- Sidebar -->
+  <div class="col s12 m3 l2 xl2">
+    <div class="sidebar" id="sidebar"></div>
+  </div>
+  <h4 class="teal-text">Matched Jobs</h4>
+  <div class="switch" style="margin-bottom:16px;">
+    <label>
+      Strict
+      <input type="checkbox" id="flexToggle" checked>
+      <span class="lever"></span>
+      Flex
+    </label>
+  </div>
+  <table class="highlight responsive-table">
+    <thead>
+      <tr><th>Title</th><th>Category</th><th>Location</th><th>Shift</th></tr>
+    </thead>
+    <tbody id="jobsBody"></tbody>
+  </table>
+
+  <script src="/components/sidebar.js"></script>
+  <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            loadSidebar();
+
+            const token = localStorage.getItem("token");
+            if (!token) {
+                window.location.href = "/";
+                return;
+            }
+
+            const user = JSON.parse(atob(token.split('.')[1]));
+            document.getElementById("welcomeMessage").textContent =
+                `Hello, ${user.name} (${user.role})`;
+
+            // Navigate to profile page
+            document.getElementById("profileBtn").addEventListener("click", () => {
+                window.location.href = "profile.html";
+            });
+
+            // Logout
+            document.getElementById("logoutBtn").addEventListener("click", () => {
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                window.location.href = "/";
+            });
+        });
+    </script>
+  <script>
+    function authHeaders() {
+      const t = localStorage.getItem('token');
+      return t ? { Authorization: 'Bearer ' + t } : {};
+    }
+    async function loadMatches() {
+      const flex = document.getElementById('flexToggle').checked ? 'true' : 'false';
+      const res = await fetch(`/api/jobs/match?flex=${flex}&limit=50`, { headers: { ...authHeaders() }});
+      if (res.status === 401) return location.replace('/');
+      const data = await res.json();
+      const rows = (data.strict.length ? data.strict : data.flex).map(j => `
+        <tr>
+          <td>${j.title}</td>
+          <td>${j.category?.name || ''}</td>
+          <td>${j.location}</td>
+          <td>${j.shiftDetails}</td>
+        </tr>
+      `).join('');
+      document.getElementById('jobsBody').innerHTML = rows || `<tr><td colspan="4">No matches yet.</td></tr>`;
+    }
+    document.getElementById('flexToggle').addEventListener('change', loadMatches);
+    loadMatches();
+  </script>
+</body>
+</html>
