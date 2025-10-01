@@ -1,166 +1,333 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Edit Job - Trial Shift</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <link rel="stylesheet" href="/css/styles.css" />
-  <link rel="stylesheet" href="/css/job-post.css">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/job-post.css" />
 </head>
+
 <body>
-  <div class="container">
-    <h1>Edit Job</h1>
-    <div class="row">
-      <div class="col s12">
-        <div class="card">
-          <div class="card-content">
-            <form id="editForm">
-              <input type="hidden" id="jobId" name="jobId">
-              
-              <!-- Job Title -->
-              <div class="row">
-                <div class="input-field col s12">
-                  <input type="text" id="title" name="title" required>
-                  <label for="title">Job Title</label>
-                </div>
-              </div>
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar"></div>
 
-              <!-- Category Select with Badges -->
-              <div class="row">
-                <div class="input-field col s12">
-                  <select id="category" name="category" required>
-                    <option value="" disabled selected>Choose a category</option>
-                    <option value="kitchenhand" data-count="0">Kitchen Hand <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="cleaning" data-count="0">Cleaning <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="delivery" data-count="0">Delivery <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="waiter" data-count="0">Waiter <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="barista" data-count="0">Barista <span class="badge" data-badge-caption="">0 jobs</span></option>
-                    <option value="pickpacker" data-count="0">Pick Packer <span class="badge" data-badge-caption="">0 jobs</span></option>
-                  </select>
-                  <label for="category">Category</label>
-                </div>
-              </div>
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-right">
+      <i class="material-icons profile-icon" id="profileBtn">account_circle</i>
+      <button id="logoutBtn" class="logout-btn">Logout</button>
+    </div>
+  </header>
 
-              <!-- Location Select -->
-              <div class="row">
-                <div class="input-field col s12">
-                  <select id="location" name="location" required>
-                    <option value="" disabled selected>Choose a location</option>
-                      <option value="Burwood">Burwood</option>
-                      <option value="Box Hill">Box Hill</option>
-                      <option value="Camberwell">Camberwell</option>
-                      <option value="Dandenong">Dandenong</option>
-                      <option value="Doncaster">Doncaster</option>
-                      <option value="Frankston">Frankston</option>
-                      <option value="Footscray">Footscray</option>
-                      <option value="Glen Waverley">Glen Waverley</option>
-                      <option value="Hawthorn">Hawthorn</option>
-                      <option value="Mitcham">Mitcham</option>
-                      <option value="Moorabbin">Moorabbin</option>
-                      <option value="Nunawading">Nunawading</option>
-                      <option value="Prahran">Prahran</option>
-                      <option value="Richmond">Richmond</option>
-                      <option value="St Kilda">St Kilda</option>
-                      <option value="Sunshine">Sunshine</option>
-                  </select>
-                  <label for="location">Location</label>
-                </div>
-              </div>
+  <!-- Main content -->
+  <main class="main-content">
+    <div class="job-post-container">
+      <!-- Welcome Section -->
+      <div class="welcome-section">
+        <h4>Edit Job Listing</h4>
+        <p id="welcomeMessage">Update your job details and requirements</p>
+      </div>
 
-              <!-- Shift Details -->
-              <div class="row">
-                <div class="input-field col s12">
-                  <textarea id="shiftDetails" name="shiftDetails" class="materialize-textarea" required></textarea>
-                  <label for="shiftDetails">Shift Details</label>
-                </div>
-              </div>
+      <!-- Main Grid Layout -->
+      <div class="job-grid">
+        <!-- Edit Job Form Card -->
+        <div class="job-card">
+          <h4>✏️ Edit Job Details</h4>
+          <p class="muted">Update the job information below to keep your listing current and accurate</p>
+          
+          <form id="editForm" class="form-grid">
+            <input type="hidden" id="jobId" name="jobId">
+            
+            <div class="row">
+              <label class="form-label">Job Title</label>
+              <input type="text" id="title" name="title" class="soft-input" placeholder="e.g., Senior Kitchen Hand, Delivery Driver" required>
+            </div>
 
-              <!-- Submit Button -->
-              <div class="row">
-                <div class="input-field col s12">
-                  <button type="submit" class="btn">Update Job</button>
-                </div>
-              </div>
+            <div class="row">
+              <label class="form-label">Category</label>
+              <select id="category" name="category" class="soft-input" required>
+                <option value="" disabled selected>Choose a job category</option>
+                <!-- Categories will be loaded dynamically -->
+              </select>
+            </div>
 
-            </form>
+            <div class="row">
+              <label class="form-label">Location</label>
+              <select id="location" name="location" class="soft-input" required>
+                <option value="" disabled selected>Select job location</option>
+                <option value="Burwood">Burwood</option>
+                <option value="Box Hill">Box Hill</option>
+                <option value="Camberwell">Camberwell</option>
+                <option value="Dandenong">Dandenong</option>
+                <option value="Doncaster">Doncaster</option>
+                <option value="Frankston">Frankston</option>
+                <option value="Footscray">Footscray</option>
+                <option value="Glen Waverley">Glen Waverley</option>
+                <option value="Hawthorn">Hawthorn</option>
+                <option value="Mitcham">Mitcham</option>
+                <option value="Moorabbin">Moorabbin</option>
+                <option value="Nunawading">Nunawading</option>
+                <option value="Prahran">Prahran</option>
+                <option value="Richmond">Richmond</option>
+                <option value="St Kilda">St Kilda</option>
+                <option value="Sunshine">Sunshine</option>
+              </select>
+            </div>
+
+            <div class="row">
+              <label class="form-label">Shift Details</label>
+              <textarea id="shiftDetails" name="shiftDetails" class="soft-textarea" placeholder="Describe the shift timing, duration, requirements, and any special instructions..." required></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-cta">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">update</i>
+                Update Job
+              </button>
+              <a href="/job-post.html" class="btn-soft">
+                <i class="material-icons" style="vertical-align: middle; margin-right: 8px;">arrow_back</i>
+                Back to Jobs
+              </a>
+            </div>
+          </form>
+          
+          <div id="successMessage" class="help-success" style="display: none; margin-top: 20px;"></div>
+          <div id="errorMessage" class="help-error" style="display: none; margin-top: 20px;"></div>
+        </div>
+
+        <!-- Job Preview Card -->
+        <div class="jobs-card">
+          <h4>👁️ Job Preview</h4>
+          <p class="muted" style="color: #6b7280;">This is how your job will appear to candidates</p>
+          
+          <div class="manage-list" id="jobPreview">
+            <div class="empty-state">
+              <i class="material-icons">visibility</i>
+              <p>Job preview will appear here</p>
+              <p style="font-size: 0.9em; margin-top: 10px;">Fill out the form to see a preview</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </main>
 
-    <div class="row">
-      <div class="col s12 center-align">
-        <a href="/job-post" class="btn">Back to Job Posting</a>
-      </div>
-    </div>
-  </div>
+  <!-- Sidebar component -->
+  <script src="/components/sidebar.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Initialize selects
-      M.AutoInit();
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        if (!base64Url) return null;
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        return JSON.parse(jsonPayload);
+      } catch {
+        return null;
+      }
+    }
 
-      const selects = document.querySelectorAll('select');
-      M.FormSelect.init(selects);
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof loadSidebar === 'function') {
+        loadSidebar();
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/';
+        return;
+      }
+
+      const user = parseJwt(token);
+      if (!user) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+        return;
+      }
+
+      document.getElementById('welcomeMessage').textContent =
+        `Welcome back, ${user.name || user.username || 'User'}! Update your job listing details.`;
+
+      document.getElementById('profileBtn').addEventListener('click', () => {
+        window.location.href = '/profile.html';
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/';
+      });
 
       // Get job ID from query
       const urlParams = new URLSearchParams(window.location.search);
       const jobId = urlParams.get('id');
       if (!jobId) {
-        alert('No job selected for editing.');
-        window.location.href = '/job-post';
+        showMessage('No job selected for editing.', 'error');
+        setTimeout(() => {
+          window.location.href = '/job-post.html';
+        }, 2000);
         return;
       }
       document.getElementById('jobId').value = jobId;
 
+      // Load categories for dropdown
+      function loadCategories() {
+        fetch('/api/categories')
+          .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+          })
+          .then(categories => {
+            const categorySelect = document.getElementById('category');
+            
+            // Clear existing options except the first one
+            while (categorySelect.options.length > 1) {
+              categorySelect.remove(1);
+            }
+            
+            // Add categories from database
+            categories.forEach(category => {
+              const option = document.createElement('option');
+              option.value = category.name;
+              option.textContent = category.name;
+              categorySelect.appendChild(option);
+            });
+
+            // Now load job data after categories are loaded
+            loadJobData();
+          })
+          .catch(error => console.error('Error loading categories:', error));
+      }
+
       // Fetch job data
-      fetch(`/api/jobs/${jobId}`)
-        .then(resp => resp.json())
-        .then(job => {
-          document.getElementById('title').value = job.title || '';
-          document.getElementById('shiftDetails').value = job.shiftDetails || '';
+      function loadJobData() {
+        fetch(`/api/jobs/${jobId}`)
+          .then(resp => {
+            if (!resp.ok) throw new Error('Failed to fetch job data');
+            return resp.json();
+          })
+          .then(job => {
+            document.getElementById('title').value = job.title || '';
+            document.getElementById('shiftDetails').value = job.shiftDetails || '';
+            document.getElementById('category').value = job.category?.name || job.category || '';
+            document.getElementById('location').value = job.location || '';
 
-          // Set category and update badges
-          const categorySelect = document.getElementById('category');
-          categorySelect.value = job.category.name || job.category || '';
-          const instanceCat = M.FormSelect.getInstance(categorySelect);
-          if (instanceCat) instanceCat.destroy();
-          M.FormSelect.init(categorySelect);
+            // Update preview
+            updateJobPreview(job);
+          })
+          .catch(err => {
+            console.error('Error fetching job data:', err);
+            showMessage('Error loading job data. Please try again.', 'error');
+          });
+      }
 
-          // Set location
-          const locationSelect = document.getElementById('location');
-          locationSelect.value = job.location || '';
-          const instanceLoc = M.FormSelect.getInstance(locationSelect);
-          if (instanceLoc) instanceLoc.destroy();
-          M.FormSelect.init(locationSelect);
+      // Update job preview
+      function updateJobPreview(job) {
+        const preview = document.getElementById('jobPreview');
+        preview.innerHTML = `
+          <div class="manage-item">
+            <div class="manage-title">${job.title || 'Job Title'}</div>
+            <div class="job-meta">
+              <strong>Category:</strong> ${job.category?.name || 'Unknown'} | 
+              <strong>Location:</strong> ${job.location || 'Not specified'}
+            </div>
+            <div class="job-shift">${job.shiftDetails || 'No shift details provided'}</div>
+            <div class="manage-actions">
+              <span class="icon-btn edit-btn" style="background: #667eea;">
+                <i class="material-icons" style="font-size: 18px;">visibility</i>
+              </span>
+              <span style="color: #6b7280; font-size: 0.9em; margin-left: 10px;">
+                Preview Mode
+              </span>
+            </div>
+          </div>
+        `;
+      }
 
-          M.updateTextFields();
-        })
-        .catch(err => console.error('Error fetching job data:', err));
-
-      // Submit edit form
+      // Form submission
       const form = document.getElementById('editForm');
+      const successMsg = document.getElementById('successMessage');
+      const errorMsg = document.getElementById('errorMessage');
+
       form.addEventListener('submit', function(e) {
         e.preventDefault();
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="material-icons" style="vertical-align: middle; margin-right: 8px;">hourglass_empty</i> Updating...';
+        submitBtn.disabled = true;
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData);
+        
         fetch(`/api/jobs/${jobId}`, {
           method: 'PUT',
-          body: new URLSearchParams(data),
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+          headers: { 
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': `Bearer ${token}`
+          },
+          body: new URLSearchParams(data)
         })
-        .then(resp => {
-          if (!resp.ok) throw new Error(`HTTP error! status: ${resp.status}`);
-          return resp.json();
-        })
-        .then(data => {
-          alert('Job updated successfully!');
-          window.location.href = '/job-post';
-        })
-        .catch(err => console.error('Edit error:', err));
+          .then(resp => {
+            if (!resp.ok) throw new Error('Failed to update job');
+            return resp.json();
+          })
+          .then(updatedJob => {
+            showMessage('🎉 Job updated successfully!', 'success');
+            updateJobPreview(updatedJob);
+            
+            // Redirect after success
+            setTimeout(() => {
+              window.location.href = '/job-post.html';
+            }, 1500);
+          })
+          .catch(err => {
+            console.error('Edit error:', err);
+            showMessage('❌ Failed to update job. Please try again.', 'error');
+          })
+          .finally(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+          });
       });
+
+      // Real-time preview updates
+      form.addEventListener('input', function() {
+        const previewJob = {
+          title: document.getElementById('title').value,
+          category: { name: document.getElementById('category').value },
+          location: document.getElementById('location').value,
+          shiftDetails: document.getElementById('shiftDetails').value
+        };
+        updateJobPreview(previewJob);
+      });
+
+      // Helper function to show messages
+      function showMessage(message, type) {
+        if (type === 'success') {
+          successMsg.textContent = message;
+          successMsg.style.display = 'block';
+          errorMsg.style.display = 'none';
+        } else {
+          errorMsg.textContent = message;
+          errorMsg.style.display = 'block';
+          successMsg.style.display = 'none';
+        }
+        
+        setTimeout(() => {
+          successMsg.style.display = 'none';
+          errorMsg.style.display = 'none';
+        }, 5000);
+      }
+
+      // Initialize
+      loadCategories();
     });
   </script>
 </body>

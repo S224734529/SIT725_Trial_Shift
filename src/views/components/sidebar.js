@@ -62,7 +62,6 @@ function loadSidebar() {
       { name: "Job Matches", icon: "merge_type", url: "/job-matches.html" },
     ];
   }
-
   menuList.innerHTML = menuItems
     .map(item => `
       <li>
