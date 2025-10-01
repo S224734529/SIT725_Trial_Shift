@@ -104,6 +104,21 @@ Trial_Shift
    ```
    The application will be running on `http://localhost:5000`.
 
+5. **Execute the API testing**
+   Start the server with:
+   ```bash
+   npm run test
+   ```   
+6. **Execute the E2E testing**
+   Start the server with:
+   ```bash
+   npm run test:e2e
+   ```
+7. **Generate E2E testing report**
+   Start the server with:
+   ```bash
+   npx playwright show-report testing\reports\playwright
+   ```       
 ## Usage
 
 - Navigate to the main page at `http://localhost:5000` to access the application.
@@ -112,6 +127,41 @@ Use http://localhost:3000/job-post to create, update, or delete job postings.
 Use http://localhost:3000/category-counts to view job counts by category.
 Use http://localhost:3000/job-apply to apply for available jobs.
 - Use the user-related functionalities available on the user page.
+
+## User Authentication & Profile API
+
+## Authentication
+  POST /api/users/register → Register a new user
+
+  POST /api/users/login → Login user
+
+## Profile Management
+  GET /api/users/profile → Get user profile (authenticated)
+
+  PUT /api/users/profile → Update profile (requires admin approval)
+    Body: { profile data } + profilePic file
+
+  DELETE /api/users/profile/picture → Delete profile picture (authenticated)
+
+  POST /api/users/upload/profile-pic → Upload profile picture (authenticated)
+    Body: file (image)
+
+## Profile Update Requests API
+  GET /api/profile-update-requests → Get all pending profile update requests
+
+  PUT /api/profile-update-requests/:id/approve → Approve a profile update request
+
+  PUT /api/profile-update-requests/:id/decline → Decline a profile update request
+    Body: { reason: "Optional reason for declining" }
+
+## Admin User Management API
+  GET /api/admin/users → Get all users (admin only)
+
+  DELETE /api/admin/users/:id → Delete a user permanently (admin only)
+
+  PUT /api/admin/users/:id/active → Toggle user active/inactive (admin only)
+
+  POST /api/admin/users/bulk-delete → Bulk delete users (admin only) 
 
 ## Job Preferences API
 
