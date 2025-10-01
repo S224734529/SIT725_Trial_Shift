@@ -4,7 +4,10 @@ const express = require("express");
 const mongoose = require("mongoose");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
+
+// Admin-only manage courses page
+const { authenticate, authorize } = require("./middleware/authMiddleware");
 
 // Middleware
 app.use(express.json());
@@ -25,7 +28,6 @@ app.get("/job-post", (req, res) => {
 app.get("/category-counts", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "category-counts.html"));
 });
-
 app.get("/job-preferences", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "job-preferences.html"));
 });
@@ -38,9 +40,12 @@ app.get("/courses", (req, res) => {
 app.get("/job-edit", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "job-edit.html"));
 });
-
-// Admin-only manage courses page
-const { authenticate, authorize } = require("./middleware/authMiddleware");
+app.get("/category-manage", authenticate, authorize("admin"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "category-manage.html"));
+});
+app.get("/category-edit", authenticate, authorize("admin"), (req, res) => {
+  res.sendFile(path.join(__dirname, "views", "category-edit.html"));
+});
 app.get("/courses/manage", authenticate, authorize("admin"), (req, res) => {
   res.sendFile(path.join(__dirname, "views", "courses.html"));
 });
@@ -54,7 +59,10 @@ const jobPreferenceRoutes = require("./routes/jobPreferenceRoutes");
 app.use("/api/job-preferences", jobPreferenceRoutes);
 const courseRoutes = require("./routes/courseRoutes");
 app.use("/api/courses", courseRoutes);
-app.use("/api/admin", require("./routes/adminUserRoutes"));
+const adminUserRoutes = require("./routes/adminUserRoutes");
+app.use("/api/admin", adminUserRoutes);
+const adminRoutes = require("./routes/adminRoutes");
+app.use("/api/admin", adminRoutes);
 
 // MongoDB connection
 mongoose
