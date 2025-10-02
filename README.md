@@ -120,7 +120,143 @@ package-lock.json
 package.json
 seedContent.js
 seedCourseUsers.js
+=======
+```
+Trial_Shift
+├── src
+│   ├── app.js
+│   ├── controllers
+│   │   ├── adminController.js
+│   │   ├── adminUserController.js
+│   │   ├── courseController.js
+│   │   ├── jobController.js
+│   │   ├── jobMatchController.js
+│   │   ├── jobPrefereceController.js
+│   │   └── userController.js
+│   ├── middleware
+│   │   └── authMiddleware.js
+│   ├── models
+│   │   ├── category.js
+│   │   ├── job.js
+│   │   ├── jobPreference.js
+│   │   ├── module.js
+│   │   ├── profileUpdateRequest.js
+│   │   └── user.js
+│   ├── public
+│   │   ├── css
+│   │   │   ├── admin-approval.css
+│   │   │   ├── admin-user.css
+│   │   │   ├── courses.css
+│   │   │   ├── job-post.css
+│   │   │   ├── job-preferences.css
+│   │   │   ├── profile.css
+│   │   │   └── styles.css
+│   │   ├── img
+│   │   │   ├── learning.png
+│   │   │   └── logo.png
+│   │   ├── js
+│   │   │   ├── courses.js
+│   │   │   └── job-preferences.js
+│   │   └── dashboard.html
+│   ├── routes
+│   │   ├── adminUserRoutes.js
+│   │   ├── courseRoutes.js
+│   │   ├── jobMatchRoutes.js
+│   │   ├── jobPreferenceRoutes.js
+│   │   ├── jobRoutes.js
+│   │   └── userRoutes.js
+│   └── views
+│       ├── components
+│       │   └── sidebar.js
+│       ├── courses.html
+│       ├── job-Matches.html
+│       ├── job-Preferences.html
+│       ├── job-apply.html
+│       ├── job-edit.html
+│       ├── job-post.html
+│       ├── login.html
+│       ├── profile.html
+│       ├── review-request.html
+│       └── user.html
+├── package.json
+├── .env
+└── README.md
+```
 
+## Stack
+
+- **Node.js / Express**
+- **MongoDB / Mongoose**
+- **Materialize CSS**
+- **Vanilla JavaScript**
+
+## Setup Instructions
+
+1. **Clone the Repository**
+
+   ```bash
+   git clone https://github.com/S224734529/SIT725_Trial_Shift.git
+   ```
+
+2. **Install Dependencies**
+   Make sure you have Node.js installed. Then run:
+
+   ```bash
+   npm install
+
+   npm install express mongoose dotenv jsonwebtoken bcrypt
+
+   npm install googleapis multer
+
+   npm install validator
+   ```
+
+3. **Environment Variables**
+   Create a `.env` file in the root directory and add your MongoDB connection string and any other necessary environment variables.
+
+4. **Run the Application**
+   Start the server with:
+   ```bash
+   node src/app.js
+   ```
+   The application will be running on `http://localhost:5000`.
+
+5. **Execute the API testing**
+   Start the server with:
+   ```bash
+   npm run test
+   ```   
+6. **Execute the E2E testing**
+   Start the server with:
+   ```bash
+   npm run test:e2e
+   ```
+7. **Generate E2E testing report**
+   Start the server with:
+   ```bash
+   npx playwright show-report testing\reports\playwright
+   ```       
+## Usage
+
+- Navigate to the main page at `http://localhost:5000` to access the application.
+Navigate to http://localhost:3000 for the login page.
+Use http://localhost:3000/job-post to create, update, or delete job postings.
+Use http://localhost:3000/category-counts to view job counts by category.
+Use http://localhost:3000/job-apply to apply for available jobs.
+- Use the user-related functionalities available on the user page.
+
+## User Authentication & Profile API
+
+## Authentication
+- POST /api/users/register → Register a new user
+
+- POST /api/users/login → Login user
+
+## Profile Management
+- GET /api/users/profile → Get user profile (authenticated)
+
+- PUT /api/users/profile → Update profile (requires admin approval)
+    Body: { profile data } + profilePic file
 
 ```
 ## Technology Stack
