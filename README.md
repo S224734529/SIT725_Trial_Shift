@@ -1,11 +1,126 @@
-# Trial Shift
+# Trial Shift - Job Management Platform
 
 ## Overview
-
-This project is a web application built using Node.js, Vanilla JavaScript, HTML & CSS (Materialize), and MongoDB. It follows the MVC (Model-View-Controller) architecture, ensuring a clear separation of concerns.
+Trial Shift is a comprehensive job management web application built using Node.js, Express, MongoDB, and Vanilla JavaScript. The platform enables employers to post jobs, manage categories, and allows job seekers to apply for positions. The application follows MVC architecture with robust API endpoints and modern UI design.
 
 ## Project Structure
 
+src/
+├── config/
+│   └── cloudinary.js
+├── controllers/
+│   ├── adminController.js
+│   ├── adminUserController.js
+│   ├── courseController.js
+│   ├── jobController.js
+│   ├── jobController.test.js
+│   ├── jobMatchController.js
+│   ├── jobPreferenceController.js
+│   └── userController.js
+├── middleware/
+│   └── authMiddleware.js
+├── models/
+│   ├── category.js
+│   ├── job.js
+│   ├── jobPreference.js
+│   ├── module.js
+│   ├── profileUpdateRequest.js
+│   └── user.js
+├── public/
+│   ├── css/
+│   │   ├── admin-approval.css
+│   │   ├── admin-user.css
+│   │   ├── category-manage.css
+│   │   ├── courses.css
+│   │   ├── job-post.css
+│   │   ├── job-preferences.css
+│   │   ├── profile.css
+│   │   └── styles.css
+│   ├── img/
+│   └── js/
+│       ├── courses.js
+│       └── job-preferences.js
+├── routes/
+│   ├── adminRoutes.js
+│   ├── adminUserRoutes.js
+│   ├── courseRoutes.js
+│   ├── jobMatchRoutes.js
+│   ├── jobPreferenceRoutes.js
+│   ├── jobRoutes.js
+│   └── userRoutes.js
+├── views/
+│   ├── components/
+│   ├── category-edit.html
+│   ├── category-manage.html
+│   ├── courses.html
+│   ├── employer-dashboard.html
+│   ├── job-Matches.html
+│   ├── job-Preferences.html
+│   ├── job-edit.html
+│   ├── job-post.html
+│   ├── job-seeker-dashboard.html
+│   ├── login.html
+│   ├── profile.html
+│   ├── review-request.html
+│   └── user.html
+└── app.js
+
+test-assets/
+
+testing/
+├── api/
+│   ├── factories/
+│   └── specs/
+│       ├── admin.approve.spec.js
+│       ├── admin.decline.spec.js
+│       ├── admin.spec.js
+│       ├── auth.spec.js
+│       ├── categoryCrud.spec.js
+│       ├── courseAPI.spec.js
+│       ├── job-preferences.api.test.js
+│       ├── jobCrud.spec.js
+│       ├── profile.spec.js
+│       ├── users.bulk.delete.spec.js
+│       ├── users.delete.spec.js
+│       ├── users.inactive.spec.js
+│       └── users.spec.js
+├── config/
+│   ├── .env.test
+│   ├── jest.config.js
+│   └── playwright.config.js
+├── e2e/
+│   ├── pages/
+│   │   ├── category.page.js
+│   │   ├── courses.page.js
+│   │   ├── job-preferences.page.js
+│   │   ├── job.page.js
+│   │   ├── login.page.js
+│   │   ├── profile.page.js
+│   │   ├── register.page.js
+│   │   ├── review-request.page.js
+│   │   └── user.page.js
+│   └── specs/
+│       ├── categoryCrud.spec.js
+│       ├── courses.spec.js
+│       ├── job-preferences.spec.js
+│       ├── jobCrud.spec.js
+│       ├── login.spec.js
+│       ├── profile.spec.js
+│       ├── register.spec.js
+│       ├── review-request.spec.js
+│       └── user.spec.js
+└── test-data/
+    └── course-data.js
+
+.env
+.gitignore
+LICENSE
+README.md
+package-lock.json
+package.json
+seedContent.js
+seedCourseUsers.js
+=======
 ```
 Trial_Shift
 ├── src
@@ -143,94 +258,245 @@ Use http://localhost:3000/job-apply to apply for available jobs.
 - PUT /api/users/profile → Update profile (requires admin approval)
     Body: { profile data } + profilePic file
 
-- DELETE /api/users/profile/picture → Delete profile picture (authenticated)
+```
+## Technology Stack
+- **Backend**: Node.js, Express.js
+- **Database**: MongoDB with Mongoose ODM
+- **Frontend**: Vanilla JavaScript, HTML5, Materialize CSS
+- **Authentication**: JWT (JSON Web Tokens)
+- **Testing**: Mocha, Chai, Supertest, Playwright
 
-- POST /api/users/upload/profile-pic → Upload profile picture (authenticated)
-    Body: file (image)
+## Database Schema
 
-## Profile Update Requests API
-- GET /api/profile-update-requests → Get all pending profile update requests
+Job Model
 
-- PUT /api/profile-update-requests/:id/approve → Approve a profile update request
+javascript
+{
+  title: String,
+  category: { type: ObjectId, ref: 'Category' },
+  location: String,
+  shiftDetails: String,
+  employerId: String, // Reference to User
+  applications: [{
+    applicantName: String,
+    coverLetter: String,
+    appliedAt: Date
+  }],
+  expiryDate: Date,
+  createdAt: Date
+}
 
-- PUT /api/profile-update-requests/:id/decline → Decline a profile update request
-    Body: { reason: "Optional reason for declining" }
+Category Model
 
-## Admin User Management API
-- GET /api/admin/users → Get all users (admin only)
+javascript
+{
+  name: String,
+  description: String,
+  jobCount: Number
+}
+JobPreference Model
+javascript
+{
+  userId: { type: ObjectId, ref: 'User' },
+  preferredLocation: String,
+  preferredCategories: [String],
+  programmingLanguages: [String],
+  experienceLevel: String
+}
+Job & Category APIs
+Job Management API
+Create Job
+POST /api/jobs
 
-- DELETE /api/admin/users/:id → Delete a user permanently (admin only)
+javascript
+// Request Body
+{
+  "title": "Senior Kitchen Hand",
+  "category": "kitchenhand",
+  "location": "Melbourne",
+  "shiftDetails": "Evening shifts, 5pm-11pm"
+}
 
-- PUT /api/admin/users/:id/active → Toggle user active/inactive (admin only)
+// Response
+{
+  "_id": "507f1f77bcf86cd799439011",
+  "title": "Senior Kitchen Hand",
+  "category": { "name": "kitchenhand" },
+  "location": "Melbourne",
+  "shiftDetails": "Evening shifts, 5pm-11pm",
+  "employerId": "12345"
+}
+Get All Jobs
+GET /api/jobs
 
-- POST /api/admin/users/bulk-delete → Bulk delete users (admin only) 
+Returns all jobs with populated category information
+Supports employer-specific job filtering
+Update Job
+PUT /api/jobs/:id
 
-## Job Preferences API
+javascript
+// Request Body
+{
+  "title": "Updated Job Title",
+  "category": "cleaning",
+  "location": "Sydney",
+  "shiftDetails": "Updated shift details"
+}
 
-- `GET /api/job-preferences` → list current user’s preferences
-- `POST /api/job-preferences` → create one
-  - body: { preferredLocation, preferredCategories[], programmingLanguages[] }
-- `PUT /api/job-preferences/:id` → update one
-- `DELETE /api/job-preferences/:id` → delete one
-- `DELETE /api/job-preferences` → bulk delete
+Delete Job
+DELETE /api/jobs/:id
+Deletes a specific job by ID
+Employer-specific authorization
+Bulk Delete Jobs
+DELETE /api/jobs/bulk
 
-  - body: { ids: ["...", "..."] }
+javascript
+// Request Body
+{
+  "jobIds": ["id1", "id2", "id3"]
+}
 
-- Job Management
+Category Management API
+Get All Categories
+GET /api/categories
+Returns all categories with job counts
 
-POST /api/jobs → Create a new job
-Body: { title, category, location, shiftDetails }
+Create Category
+POST /api/categories
 
-PUT /api/jobs/:id → Update a job
-Body: { title, category, location, shiftDetails }
+javascript
+// Request Body
+{
+  "name": "Software Development",
+  "description": "IT and programming roles"
+}
 
-DELETE /api/jobs/:id → Delete a job
-DELETE /api/jobs/bulk → Bulk delete jobs
-Body: { jobIds: ["...", "..."] }
+Update Category
+PUT /api/categories/:id
+Updates category name and description
 
-GET /api/jobs → List available jobs
-POST /api/jobs/apply → Apply for a job
-Body: { jobId, applicantName, coverLetter }
+Delete Category
+DELETE /api/categories/:id
+Removes category if no jobs are associated
 
-- Category Management
-GET /api/categories/counts → Get job counts by category
+Get Category Counts
+GET /api/categories/counts
+Returns job counts per category
+Job Application API
+Apply for Job
+POST /api/jobs/apply
 
-  # Job Preferences App (Node.js + Express + MongoDB)
+javascript
+// Request Body
+{
+  "jobId": "507f1f77bcf86cd799439011",
+  "applicantName": "John Doe",
+  "coverLetter": "I am interested in this position..."
+}
 
-## Cousrse Content Management API
+## Workflows
 
-- `GET /api/modules` → list all modules
-  - Query params:
-    - category (optional)
-    - search (optional, searches title)
-    - visibility (optional)
-- `GET /api/modules/:id` → get a specific module
-- `POST /api/modules` → create a new module
-  - body: { title, category } (both required)
-- `PUT /api/modules/:id` → update a module
-- `DELETE /api/modules/:id` → delete a module
-- `DELETE /api/modules` → bulk delete
-  - body: { ids: ["...", "..."] }
-- `POST /api/modules/:id/assets` → upload assets to a module
-  - body:
-    - type: string
-    - title: string
-    - text: string (if type is 'text')
-    - url: string (for non-text assets)
-- `POST /api/modules/:id/release` → publish a new version of a module
+# Job Posting Workflow
 
-A simple CRUD app for **Job Preferences** with:
+Employer Authentication → Login with employer role
+Job Creation → Fill job form with title, category, location, shift details
+Category Management → Auto-create categories if they don't exist
+Job Listing → Jobs displayed in employer dashboard
+Job Applications → Job seekers apply through the system
 
-- Create / Read / Update / Delete
-- **Bulk delete** with “Select All”
-- Fields: `preferredLocation`, `preferredCategories[]`
-- UI: **Materialize CSS** ( HTML + vanilla JS)
+# Category Management Workflow
 
+Admin/Employer Access → Role-based access to category management
+Category Creation → Create new job categories with descriptions
+Category Assignment → Jobs are linked to categories
+Category Analytics → Track job counts per category
+
+
+
+## Testing Structure
+
+API Testing
+Located in testing/api/specs/
+Authentication Tests: Login, registration, token validation
+Job Tests: CRUD operations, category management
+
+End-to-End Testing
+Located in testing/e2e/specs/
+Login/Registration: User flow testing
+Profile Management: Update and view profiles
+Job Operations: Posting, editing, deleting jobs
+
+Running Tests
+bash
+# API Tests
+npm run test:api
+
+# E2E Tests  
+npm run test:e2e
+
+# All Tests
+npm test
+Setup Instructions
+Prerequisites
+Node.js (v14 or higher)
+
+MongoDB (local or Atlas)
+
+Git
+
+Installation
+Clone Repository
+
+bash
+git clone https://github.com/S224734529/SIT725_Trial_Shift.git
+cd SIT725_Trial_Shift
+Install Dependencies
+
+bash
+npm install
+Environment Setup
+Create .env file:
+
+env
+MONGODB_URI=mongodb://localhost:27017/trialshift
+JWT_SECRET=your_jwt_secret_key
+PORT=5000
+Start Application
+
+bash
+node src/app.js
+Application runs on http://localhost:5000
+
+Usage Guide
+For Employers
+Register/Login with employer role
+Access job posting dashboard
+Create and manage job listings
+Review applications
+
+For Job Seekers
+Register/Login with jobseeker role
+Set job preferences
+Browse and apply for jobs
+View job matches
+
+##  API Authentication
+All protected routes require JWT token in Authorization header:
+
+text
+Authorization: Bearer <jwt_token>
 ## Contributing
 
-Feel free to contribute to this project by submitting issues or pull requests. Make sure to follow the coding standards and project structure.
+## Fork the repository
+
+Create feature branch (git checkout -b feature/AmazingFeature)
+
+Commit changes (git commit -m 'Add AmazingFeature')
+
+Push to branch (git push origin feature/AmazingFeature)
+
+Open Pull Request
 
 ## License
-
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
