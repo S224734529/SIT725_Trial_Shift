@@ -226,6 +226,22 @@ A simple CRUD app for **Job Preferences** with:
 - Fields: `preferredLocation`, `preferredCategories[]`
 - UI: **Materialize CSS** ( HTML + vanilla JS)
 
+
+## Testing Guide
+
+### API (Jest)
+- Run the full API suite: `npm run test:api`
+- Target a single spec file: `npm run test:api -- testing/api/specs/courseAPI.spec.js`
+- Filter by test name: `npm run test:api -- --testNamePattern="profile"`
+
+### E2E (Playwright)
+- Run all E2E tests: `npm run test:e2e`
+- Focus on one spec: `npm run test:e2e -- testing/e2e/specs/courses.spec.js`
+
+### Reports
+- Generate the latest Playwright HTML report: `npm run report:e2e`
+- Re-open an existing Playwright report: `npx playwright show-report testing\reports\playwright`
+- Open the latest API (Jest) report: `start testing\reports\jest\index.html`
 ## Contributing
 
 Feel free to contribute to this project by submitting issues or pull requests. Make sure to follow the coding standards and project structure.
@@ -233,4 +249,8 @@ Feel free to contribute to this project by submitting issues or pull requests. M
 ## License
 
 This project is licensed under the MIT License.
+
+
+
+
 
